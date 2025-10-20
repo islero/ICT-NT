@@ -1,4 +1,7 @@
+from datetime import datetime, timezone
+
 import pandas as pd
+from nautilus_trader.core.datetime import dt_to_unix_nanos
 from nautilus_trader.model import BarType
 from nautilus_trader.trading.config import StrategyConfig
 from core.rules import RuleBase
@@ -17,7 +20,7 @@ class TurtleSoupStrategy(RuleBasedStrategy):
         RuleBase.configure_environment(is_backtest=config.is_backtest)
 
         self._rules = [
-            #DebugRule(self, pd.Timestamp("2021-03-15 10:00:00"))
+            DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2021-03-15 10:00:00")))
         ]
 
     def on_start(self) -> None:
