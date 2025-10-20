@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from nautilus_trader.model import Bar, QuoteTick
-from rule_base import RuleBase
+from core.rules.rule_base import RuleBase
 
 class QuoteTickRuleBase(RuleBase):
     """
