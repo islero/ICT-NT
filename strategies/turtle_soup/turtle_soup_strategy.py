@@ -17,7 +17,7 @@ class TurtleSoupStrategy(RuleBasedStrategy):
         RuleBase.configure_environment(is_backtest=config.is_backtest)
 
         self._rules = [
-            DebugRule(self, pd.Timestamp("2021-03-15 10:00:00"))
+            #DebugRule(self, pd.Timestamp("2021-03-15 10:00:00"))
         ]
 
     def on_start(self) -> None:
