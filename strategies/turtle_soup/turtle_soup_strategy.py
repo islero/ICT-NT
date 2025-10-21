@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 import pandas as pd
 from nautilus_trader.core.datetime import dt_to_unix_nanos
 from nautilus_trader.model import BarType
@@ -20,12 +18,20 @@ class TurtleSoupStrategy(RuleBasedStrategy):
         RuleBase.configure_environment(is_backtest=config.is_backtest)
 
         self._rules = [
-            DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2021-03-15 10:00:00")))
+            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2021-03-15 10:00:00")))
         ]
 
     def on_start(self) -> None:
         # Subscribe base bars
         self.subscribe_bars(self.config.base_bar_type)
+
+        # register indicators before the warmup period
+        for rule in self._rules:
+            rule.on_register_indicator_for_bars()
+
+        # trigger rules on_start
+        for rule in self._rules:
+            rule.on_start()
 
     def on_stop(self) -> None:
         # Unsubscribe base bars
