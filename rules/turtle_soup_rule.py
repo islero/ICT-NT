@@ -59,6 +59,8 @@ class TurtleSoupRule(RuleBase):
 
             if self.__check_upper_liquidity_raid(bars_slice, pool):
                 self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, pool)
+                bars_slice_highs = [float(b.high) for b in bars_slice if b is not None]
+                self.shared_state.set(SharedDictKey.ENTRY_SL_PRICE, max(bars_slice_highs))
                 return True
         return False
 
@@ -71,6 +73,8 @@ class TurtleSoupRule(RuleBase):
 
             if self.__check_lower_liquidity_raid(bars_slice, pool):
                 self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, pool)
+                bars_slice_lows = [float(b.low) for b in bars_slice if b is not None]
+                self.shared_state.set(SharedDictKey.ENTRY_SL_PRICE, min(bars_slice_lows))
                 return True
         return False
 
