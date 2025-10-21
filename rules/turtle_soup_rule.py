@@ -21,12 +21,11 @@ class TurtleSoupRule(RuleBase):
         self.first_bar_initialized = False
 
     def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
+        # Reset the rule signal
+        self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
+
         # Verify the bar type is correct
         if str(bar.bar_type) not in str(self.config.bar_type) and self.first_bar_initialized:
-            return True
-
-        # validate the timeframes are synchronized and the bar is relevant
-        if not self._timeframes_sync(current_bar, self.strategy, self.config.bar_type, self.shared_state):
             return True
 
         if not self.first_bar_initialized:
@@ -53,13 +52,25 @@ class TurtleSoupRule(RuleBase):
 
     def __handle_upper_liquidity_raid(self, bars_slice: List[Bar], upper_liquidity_pools: List[float]) -> bool:
         for pool in upper_liquidity_pools:
+            latest_pool = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, None)
+            if latest_pool:
+                if pool == latest_pool:
+                    continue
+
             if self.__check_upper_liquidity_raid(bars_slice, pool):
+                self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, pool)
                 return True
         return False
 
     def __handle_lower_liquidity_raid(self, bars_slice: List[Bar], lower_liquidity_pools: List[float]) -> bool:
         for pool in lower_liquidity_pools:
+            latest_pool = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, None)
+            if latest_pool:
+                if pool == latest_pool:
+                    continue
+
             if self.__check_lower_liquidity_raid(bars_slice, pool):
+                self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, pool)
                 return True
         return False
 

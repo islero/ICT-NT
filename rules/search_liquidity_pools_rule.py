@@ -34,10 +34,6 @@ class SearchLiquidityPoolsRule(RuleBase):
         if str(bar.bar_type) not in str(self.config.bar_type) and self.first_bar_initialized:
             return True
 
-        # validate the timeframes are synchronized and the bar is relevant
-        if not self._timeframes_sync(current_bar, self.strategy, self.config.bar_type, self.shared_state):
-            return True
-
         if not self.first_bar_initialized:
             self.first_bar_initialized = True
 
