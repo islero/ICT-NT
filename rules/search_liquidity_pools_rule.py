@@ -13,8 +13,6 @@ class SearchLiquidityPoolsRuleConfig:
     bar_type: BarType                       # target bar type to search the liquidity pools
     upper_period_window: int                # the upper period window | 3 on 1D TF means the last 3 daily bars highs inclusive
     lower_period_window: int                # the lower period window | 3 on 1D TF means the last 3 daily bars lows inclusive
-    upper_result_liquidity_pools_limit: int # how many upper liquidity pools to search for count
-    lower_result_liquidity_pools_limit: int # how many lower liquidity pools to search for count
 
 class SearchLiquidityPoolsRule(RuleBase):
     """

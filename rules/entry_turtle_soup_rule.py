@@ -7,14 +7,12 @@ from core import SharedState
 from core.enums import RuleSignal
 from core.rules import RuleBase
 
-
 @dataclass
-class EntryRuleConfig:
-    sl_percentage: float = 4.0
-    tp_percentage: float = 1.5
+class EntryTurtleSoupRuleConfig:
+    risk_reward_ratio: float = 2.0
 
 class EntryTurtleSoupRule(RuleBase):
-    def __init__(self, shared_state: SharedState, strategy: Strategy, config: EntryRuleConfig):
+    def __init__(self, shared_state: SharedState, strategy: Strategy, config: EntryTurtleSoupRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
         self.config = config
@@ -36,7 +34,7 @@ class EntryTurtleSoupRule(RuleBase):
         if stop_loss_price is None:
             return False
 
-        take_profit_price = current_bar.close + (2 * abs(current_bar.close - stop_loss_price))
+        take_profit_price = current_bar.close + (self.config.risk_reward_ratio * abs(current_bar.close - stop_loss_price))
 
         self.shared_state.set(SharedDictKey.ENTRY_RULE_SIGNAL, RuleSignal.BUY)
         self.shared_state.set(SharedDictKey.ENTRY_TP_PRICE, take_profit_price)
@@ -53,7 +51,7 @@ class EntryTurtleSoupRule(RuleBase):
         if stop_loss_price is None:
             return False
 
-        take_profit_price = current_bar.close - (2 * abs(stop_loss_price - current_bar.close))
+        take_profit_price = current_bar.close - (self.config.risk_reward_ratio * abs(stop_loss_price - current_bar.close))
 
         self.shared_state.set(SharedDictKey.ENTRY_RULE_SIGNAL, RuleSignal.SELL)
         self.shared_state.set(SharedDictKey.ENTRY_TP_PRICE, take_profit_price)
