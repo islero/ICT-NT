@@ -4,6 +4,7 @@ from nautilus_trader.model import Bar
 from nautilus_trader.trading import Strategy
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
+from core.constants import SharedDictKeyBase
 from core.enums import RuleSignal
 from core.rules import RuleBase
 
@@ -30,14 +31,14 @@ class EntryTurtleSoupRule(RuleBase):
         if turtle_soup_signal not in (RuleSignal.BUY, RuleSignal.BOTH):
             return False
 
-        stop_loss_price = self.shared_state.get(SharedDictKey.ENTRY_SL_PRICE, None)
+        stop_loss_price = self.shared_state.get(SharedDictKeyBase.ENTRY_SL_PRICE, None)
         if stop_loss_price is None:
             return False
 
         take_profit_price = current_bar.close + (self.config.risk_reward_ratio * abs(current_bar.close - stop_loss_price))
 
-        self.shared_state.set(SharedDictKey.ENTRY_RULE_SIGNAL, RuleSignal.BUY)
-        self.shared_state.set(SharedDictKey.ENTRY_TP_PRICE, take_profit_price)
+        self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.BUY)
+        self.shared_state.set(SharedDictKeyBase.ENTRY_TP_PRICE, take_profit_price)
 
         return True
 
@@ -47,14 +48,14 @@ class EntryTurtleSoupRule(RuleBase):
         if turtle_soup_signal not in (RuleSignal.SELL, RuleSignal.BOTH):
             return False
 
-        stop_loss_price = self.shared_state.get(SharedDictKey.ENTRY_SL_PRICE, None)
+        stop_loss_price = self.shared_state.get(SharedDictKeyBase.ENTRY_SL_PRICE, None)
         if stop_loss_price is None:
             return False
 
         take_profit_price = current_bar.close - (self.config.risk_reward_ratio * abs(stop_loss_price - current_bar.close))
 
-        self.shared_state.set(SharedDictKey.ENTRY_RULE_SIGNAL, RuleSignal.SELL)
-        self.shared_state.set(SharedDictKey.ENTRY_TP_PRICE, take_profit_price)
+        self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.SELL)
+        self.shared_state.set(SharedDictKeyBase.ENTRY_TP_PRICE, take_profit_price)
 
         return True
 

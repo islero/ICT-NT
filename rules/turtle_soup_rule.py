@@ -5,6 +5,7 @@ from nautilus_trader.model import BarType, Bar
 from nautilus_trader.trading import Strategy
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
+from core.constants import SharedDictKeyBase
 from core.enums import RuleSignal
 from core.rules import RuleBase
 
@@ -60,7 +61,7 @@ class TurtleSoupRule(RuleBase):
             if self.__check_upper_liquidity_raid(bars_slice, pool):
                 self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, pool)
                 bars_slice_highs = [float(b.high) for b in bars_slice if b is not None]
-                self.shared_state.set(SharedDictKey.ENTRY_SL_PRICE, max(bars_slice_highs))
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(bars_slice_highs))
                 return True
         return False
 
@@ -74,7 +75,7 @@ class TurtleSoupRule(RuleBase):
             if self.__check_lower_liquidity_raid(bars_slice, pool):
                 self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, pool)
                 bars_slice_lows = [float(b.low) for b in bars_slice if b is not None]
-                self.shared_state.set(SharedDictKey.ENTRY_SL_PRICE, min(bars_slice_lows))
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(bars_slice_lows))
                 return True
         return False
 
@@ -123,7 +124,7 @@ class TurtleSoupRule(RuleBase):
     def on_start(self) -> None:
         """Actions to be performed on strategy start."""
         # Setting the warmed-up and subscribed bar type
-        key = SharedDictKey.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
+        key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
         lst = self.shared_state.get(key, [])
         if not lst:  # if the key was missing, we got the default []
             self.shared_state.set(key, lst)
@@ -148,7 +149,7 @@ class TurtleSoupRule(RuleBase):
         self.strategy.unsubscribe_bars(self.config.bar_type)
 
         # remove the bar type from a list
-        key = SharedDictKey.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
+        key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
         lst = self.shared_state.get(key, [])
         if lst and self.config.bar_type.standard() in lst:
             lst.remove(self.config.bar_type.standard())

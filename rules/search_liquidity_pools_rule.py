@@ -5,6 +5,7 @@ from nautilus_trader.model import BarType, Bar
 from nautilus_trader.trading import Strategy
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
+from core.constants import SharedDictKeyBase
 from core.rules import RuleBase
 
 @dataclass
@@ -60,7 +61,7 @@ class SearchLiquidityPoolsRule(RuleBase):
     def on_start(self) -> None:
         """Actions to be performed on strategy start."""
         # Setting the warmed-up and subscribed bar type
-        key = SharedDictKey.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
+        key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
         lst = self.shared_state.get(key, [])
         if not lst:  # if the key was missing, we got the default []
             self.shared_state.set(key, lst)
@@ -85,7 +86,7 @@ class SearchLiquidityPoolsRule(RuleBase):
         self.strategy.unsubscribe_bars(self.config.bar_type)
 
         # remove the bar type from a list
-        key = SharedDictKey.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
+        key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
         lst = self.shared_state.get(key, [])
         if lst and self.config.bar_type.standard() in lst:
             lst.remove(self.config.bar_type.standard())

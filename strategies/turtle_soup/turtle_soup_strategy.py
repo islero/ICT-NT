@@ -1,13 +1,11 @@
 from nautilus_trader.model import BarType, InstrumentId
 from nautilus_trader.trading.config import StrategyConfig
-
 from core.enums import MoneyManagementType
 from core.rules import RuleBase, EntryTradingRule
 from core.strategies import RuleBasedStrategy
 from rules.entry_turtle_soup_rule import EntryTurtleSoupRuleConfig, EntryTurtleSoupRule
 from rules.search_liquidity_pools_rule import SearchLiquidityPoolsRuleConfig, SearchLiquidityPoolsRule
 from rules.turtle_soup_rule import TurtleSoupRuleConfig, TurtleSoupRule
-
 
 class TurtleSoupStrategyConfig(StrategyConfig, frozen=True):
     """Configuration for searching liquidity pools rule."""
