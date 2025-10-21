@@ -63,9 +63,6 @@ class TurtleSoupRule(RuleBase):
                 return True
         return False
 
-    def __is_lower_liquidity_raid_detected(self, bars_slice: List[Bar], lower_liquidity_pools: List[float]) -> bool:
-        pass
-
     @staticmethod
     def __check_upper_liquidity_raid(bars_slice: List[Bar], liquidity_pool: float) -> bool:
         is_close_below_liquidity_pool = False
