@@ -6,3 +6,4 @@ class MoneyManagementType(Enum):
     """
     FIXED_RISK_PERCENT = "fixed risk percent"
     FIXED_LOT = "fixed lot"
+    MIN_QUANTITY = "min quantity"

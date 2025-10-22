@@ -4,6 +4,10 @@ from enum import StrEnum, unique
 class SharedDictKeyBase(StrEnum):
     # Warm up and subscribed bar types
     WARMED_UP_AND_SUBSCRIBED_BAR_TYPES = "warm_up_and_subscribed_bar_types"
+    ORDERS_LIST = "orders_list"
+    ORDER_ID_ENTRY = "ENTRY"
+    ORDER_ID_STOP_LOSS = "STOP_LOSS"
+    ORDER_ID_TAKE_PROFIT = "TAKE_PROFIT"
 
     # Order tracking keys
     ORDERS = "ORDERS"

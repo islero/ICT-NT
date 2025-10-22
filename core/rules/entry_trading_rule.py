@@ -55,10 +55,13 @@ class EntryTradingRule(RuleBase):
 
         quantity = instrument.min_quantity
         if self.money_management_type == MoneyManagementType.FIXED_RISK_PERCENT:
-            quantity = self.get_quantity(base_bar, sl_price, Decimal(str(self.fixed_risk_percent * 4.0)))
+            quantity = self.get_quantity(base_bar, sl_price, Decimal(str(self.fixed_risk_percent)))
 
         if self.money_management_type == MoneyManagementType.FIXED_LOT:
             quantity = instrument.make_qty(self.fixed_lot)
+
+        if self.money_management_type == MoneyManagementType.MIN_QUANTITY:
+            quantity = instrument.min_quantity
 
         # Map signal to order sides
         if entry_signal == RuleSignal.BUY:
