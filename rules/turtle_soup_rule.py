@@ -22,9 +22,6 @@ class TurtleSoupRule(RuleBase):
         self.first_bar_initialized = False
 
     def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
-        # Reset the rule signal
-        #self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
-
         # Verify the bar type is correct
         if str(bar.bar_type) not in str(self.config.bar_type) and self.first_bar_initialized:
             return True

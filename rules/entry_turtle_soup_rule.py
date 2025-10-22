@@ -40,6 +40,9 @@ class EntryTurtleSoupRule(RuleBase):
         self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.BUY)
         self.shared_state.set(SharedDictKeyBase.ENTRY_TP_PRICE, take_profit_price)
 
+        # Reset the rule signal
+        self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
+
         return True
 
     def check_short(self, current_bar: Bar) -> bool:
@@ -56,6 +59,9 @@ class EntryTurtleSoupRule(RuleBase):
 
         self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.SELL)
         self.shared_state.set(SharedDictKeyBase.ENTRY_TP_PRICE, take_profit_price)
+
+        # Reset the rule signal
+        self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
 
         return True
 
