@@ -41,13 +41,6 @@ class EntryTradingRule(RuleBase):
         sl_price = instrument.make_price(sl_val) if sl_val is not None else None
         tp_price = instrument.make_price(tp_val) if tp_val is not None else None
 
-        # --- Risk-based sizing using FixedRiskSizer ---
-        # self.trade_size is a RISK PERCENT (e.g., 1 = 1%) per Nautilus docs
-        # Requires a valid stop-loss price to compute risk per trade.
-        if sl_price is None:
-            # Cannot compute a risk-based size without a stop-loss
-            return False
-
         # Use the bar we were given (or current_bar if provided)
         base_bar = current_bar or bar
         if base_bar is None:
@@ -55,6 +48,11 @@ class EntryTradingRule(RuleBase):
 
         quantity = instrument.min_quantity
         if self.money_management_type == MoneyManagementType.FIXED_RISK_PERCENT:
+            # self.trade_size is a RISK PERCENT (e.g., 1 = 1%) per Nautilus docs
+            # Requires a valid stop-loss price to compute risk per trade.
+            if sl_price is None:
+                # Cannot compute a risk-based size without a stop-loss
+                return False
             quantity = self.get_quantity(base_bar, sl_price, Decimal(str(self.fixed_risk_percent)))
 
         if self.money_management_type == MoneyManagementType.FIXED_LOT:
@@ -94,26 +92,36 @@ class EntryTradingRule(RuleBase):
             tags=["ENTRY"],
         )
         self.strategy.submit_order(entry_order)
-        entry_time = pd.to_datetime(entry_order.ts_init, unit="ns")
-        entry_price = base_bar.close
-        sl = sl_price
-        tp = tp_price
-        open_positions = self.strategy.cache.positions_open()
 
-        # 2) STOP-LOSS (no contingency kwargs supported by stop_market in this build)
-        sl_order = self.strategy.order_factory.stop_market(
-            instrument_id=instrument.id,
-            order_side=exit_side,
-            quantity=quantity,
-            trigger_price=sl_price,
-            time_in_force=TimeInForce.GTC,
-            reduce_only=True,  # prevents opening a new position
-            tags=["STOP_LOSS"],
-        )
-        self.strategy.submit_order(sl_order)
+        if sl_price:
+            # 2) STOP-LOSS (no contingency kwargs supported by stop_market in this build)
+            sl_order = self.strategy.order_factory.stop_market(
+                instrument_id=instrument.id,
+                order_side=exit_side,
+                quantity=quantity,
+                trigger_price=sl_price,
+                time_in_force=TimeInForce.GTC,
+                reduce_only=True,  # prevents opening a new position
+                tags=["STOP_LOSS"],
+            )
+            self.strategy.submit_order(sl_order)
+            self.add_order_id_shared_state(entry_order, sl_order)
+            self.add_orders_to_shared_state(entry_order, sl_order)
 
-        self.add_order_id_shared_state(entry_order, sl_order)
-        self.add_orders_to_shared_state(entry_order, sl_order)
+        if tp_price:
+            # 2) TAKE PROFIT
+            tp_order = self.strategy.order_factory.stop_market(
+                instrument_id=instrument.id,
+                order_side=exit_side,
+                quantity=quantity,
+                trigger_price=tp_price,
+                time_in_force=TimeInForce.GTC,
+                reduce_only=True,  # prevents opening a new position
+                tags=["TAKE_PROFIT"],
+            )
+            self.strategy.submit_order(tp_order)
+            self.add_order_id_shared_state(entry_order, tp_order)
+            self.add_orders_to_shared_state(entry_order, tp_order)
 
         return True
 

@@ -83,13 +83,13 @@ class TurtleSoupRule(RuleBase):
         is_open_below_liquidity_pool = False
 
         for bar in bars_slice:
-            if bar.close < liquidity_pool:
+            if not is_close_below_liquidity_pool and bar.close < liquidity_pool:
                 is_close_below_liquidity_pool = True
                 continue
-            if bar.close > liquidity_pool:
+            if not is_close_above_liquidity_pool and bar.close > liquidity_pool:
                 is_close_above_liquidity_pool = True
                 continue
-            if bar.open < liquidity_pool:
+            if not is_open_below_liquidity_pool and bar.open < liquidity_pool:
                 is_open_below_liquidity_pool = True
                 continue
             if is_close_below_liquidity_pool and is_close_above_liquidity_pool and is_open_below_liquidity_pool:
@@ -104,13 +104,13 @@ class TurtleSoupRule(RuleBase):
         is_open_above_liquidity_pool = False
 
         for bar in bars_slice:
-            if bar.close > liquidity_pool:
+            if not is_close_above_liquidity_pool and bar.close > liquidity_pool:
                 is_close_above_liquidity_pool = True
                 continue
-            if bar.close < liquidity_pool:
+            if not is_close_below_liquidity_pool and bar.close < liquidity_pool:
                 is_close_below_liquidity_pool = True
                 continue
-            if bar.open > liquidity_pool:
+            if not is_open_above_liquidity_pool and bar.open > liquidity_pool:
                 is_open_above_liquidity_pool = True
                 continue
             if is_close_above_liquidity_pool and is_close_below_liquidity_pool and is_open_above_liquidity_pool:
