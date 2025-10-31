@@ -105,8 +105,8 @@ class EntryTradingRule(RuleBase):
                 tags=["STOP_LOSS"],
             )
             self.strategy.submit_order(sl_order)
-            self.add_order_id_shared_state(entry_order, sl_order)
-            self.add_orders_to_shared_state(entry_order, sl_order)
+            self.add_order_id_shared_state(entry_order, sl_order=sl_order)
+            self.add_orders_to_shared_state(entry_order, sl_order=sl_order)
 
         if tp_price:
             # 2) TAKE PROFIT
@@ -120,55 +120,94 @@ class EntryTradingRule(RuleBase):
                 tags=["TAKE_PROFIT"],
             )
             self.strategy.submit_order(tp_order)
-            self.add_order_id_shared_state(entry_order, tp_order)
-            self.add_orders_to_shared_state(entry_order, tp_order)
+            self.add_order_id_shared_state(entry_order, tp_order=tp_order)
+            self.add_orders_to_shared_state(entry_order, tp_order=tp_order)
 
         return True
 
-    def add_order_id_shared_state(self, entry_order, sl_order):
+    def add_order_id_shared_state(self, entry_order, sl_order=None, tp_order=None):
+        """Store client order IDs for entry/SL/TP in a single group per entry.
+
+        If a group for the given entry already exists, it will be updated in place
+        (adding SL and/or TP) instead of appending a duplicate group.
+        """
         key = SharedDictKeyBase.ORDERS_LIST
         orders_list = self.shared_state.get(key, [])
         if not orders_list:  # if the key was missing, we got the default []
             self.shared_state.set(key, orders_list)
 
-        entry_order_exists = False
-        sl_exists = False
+        # Resolve keys from SharedDictKeyBase
+        entry_id_key = SharedDictKeyBase.ORDER_ID_ENTRY
+        sl_id_key = SharedDictKeyBase.ORDER_ID_STOP_LOSS
+        tp_id_key = SharedDictKeyBase.ORDER_ID_TAKE_PROFIT
+
+        entry_id = entry_order.client_order_id
+        sl_id = sl_order.client_order_id if sl_order is not None else None
+        tp_id = tp_order.client_order_id if tp_order is not None else None
+
+        # Try to find an existing group for this entry
+        existing_group = None
         for group in orders_list:
-            ids = group.values() if isinstance(group, dict) else group
-            for order_id in ids:
-                coid = order_id if isinstance(order_id, ClientOrderId) else ClientOrderId(str(order_id))
-                if coid == entry_order.client_order_id:
-                    entry_order_exists = True
-                elif coid == sl_order.client_order_id:
-                    sl_exists = True
+            if isinstance(group, dict) and group.get(entry_id_key) == entry_id:
+                existing_group = group
+                break
 
-        if not entry_order_exists and not sl_exists:
-            orders_list.append({
-                SharedDictKeyBase.ORDER_ID_ENTRY: entry_order.client_order_id,
-                SharedDictKeyBase.ORDER_ID_STOP_LOSS: sl_order.client_order_id,
-            })
+        if existing_group is None:
+            # Create a new group
+            new_group = {entry_id_key: entry_id}
+            if sl_id is not None:
+                new_group[sl_id_key] = sl_id
+            if tp_id is not None and tp_id_key is not None:
+                new_group[tp_id_key] = tp_id
+            orders_list.append(new_group)
+        else:
+            # Update the existing group in place
+            if sl_id is not None and sl_id_key not in existing_group:
+                existing_group[sl_id_key] = sl_id
+            if tp_id is not None and tp_id_key is not None and tp_id_key not in existing_group:
+                existing_group[tp_id_key] = tp_id
 
-    def add_orders_to_shared_state(self, entry_order, sl_order):
+    def add_orders_to_shared_state(self, entry_order, sl_order=None, tp_order=None):
+        """Store order objects for entry/SL/TP in a single group per entry.
+
+        If a group for the given entry already exists, it will be updated in place
+        (adding SL and/or TP) instead of appending a duplicate group.
+        """
         key = SharedDictKeyBase.ORDERS
         orders = self.shared_state.get(key, [])
         if not orders:  # if the key was missing, we got the default []
             self.shared_state.set(key, orders)
 
-        entry_order_exists = False
-        sl_exists = False
-        for group in orders:
-            order_objects = group.values() if isinstance(group, dict) else group
-            for order_obj in order_objects:
-                if order_obj.client_order_id == entry_order.client_order_id:
-                    entry_order_exists = True
-                elif order_obj.client_order_id == sl_order.client_order_id:
-                    sl_exists = True
+        # Resolve keys from SharedDictKeyBase
+        entry_obj_key = SharedDictKeyBase.ENTRY_ORDER
+        sl_obj_key = SharedDictKeyBase.SL_ORDER
+        tp_obj_key = SharedDictKeyBase.TP_ORDER
 
-        if not entry_order_exists and not sl_exists:
-            orders.append({
-                SharedDictKeyBase.ENTRY_ORDER: entry_order,
-                SharedDictKeyBase.SL_ORDER: sl_order,
-            })
+        entry_id = entry_order.client_order_id
+
+        # Try to find an existing group for this entry (match by client_order_id)
+        existing_group = None
+        for group in orders:
+            if isinstance(group, dict):
+                entry_obj = group.get(entry_obj_key)
+                if entry_obj is not None and getattr(entry_obj, "client_order_id", None) == entry_id:
+                    existing_group = group
+                    break
+
+        if existing_group is None:
+            # Create a new group
+            new_group = {entry_obj_key: entry_order}
+            if sl_order is not None:
+                new_group[sl_obj_key] = sl_order
+            if tp_order is not None and tp_obj_key is not None:
+                new_group[tp_obj_key] = tp_order
+            orders.append(new_group)
+        else:
+            # Update the existing group in place
+            if sl_order is not None and sl_obj_key not in existing_group:
+                existing_group[sl_obj_key] = sl_order
+            if tp_order is not None and tp_obj_key is not None and tp_obj_key not in existing_group:
+                existing_group[tp_obj_key] = tp_order
 
     def get_quantity(self, bar:Bar, sl_price, risk:Decimal) -> Quantity:
         instrument_id:InstrumentId = self.instrument_id

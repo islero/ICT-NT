@@ -13,6 +13,7 @@ class SharedDictKeyBase(StrEnum):
     ORDERS = "ORDERS"
     ENTRY_ORDER = "ENTRY_ORDER"
     SL_ORDER = "SL_ORDER"
+    TP_ORDER = "TP_ORDER"
 
     # Key for tracking the sync state of the bar types
     TIMEFRAMES_SYNC = "timeframes_sync"

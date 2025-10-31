@@ -1,8 +1,11 @@
+import pandas as pd
+from nautilus_trader.core.datetime import dt_to_unix_nanos
 from nautilus_trader.model import BarType, InstrumentId
 from nautilus_trader.trading.config import StrategyConfig
 from core.enums import MoneyManagementType
-from core.rules import RuleBase, EntryTradingRule
+from core.rules import RuleBase, EntryTradingRule, SyncSharedOrdersQuoteRule
 from core.strategies import RuleBasedStrategy
+from rules.debug_rule import DebugRule
 from rules.entry_turtle_soup_rule import EntryTurtleSoupRuleConfig, EntryTurtleSoupRule
 from rules.search_liquidity_pools_rule import SearchLiquidityPoolsRuleConfig, SearchLiquidityPoolsRule
 from rules.turtle_soup_rule import TurtleSoupRuleConfig, TurtleSoupRule
@@ -53,7 +56,8 @@ class TurtleSoupStrategy(RuleBasedStrategy):
                                               self.config.fixed_lot, self.config.fixed_risk_percent)
 
         self._rules = [
-            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2021-03-15 10:00:00"))),
+            SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
+            DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-06-02 00:00:00"))),
             search_liquidity_pool_rule,
             turtle_soup_rule,
             entry_turtle_soup_rule,

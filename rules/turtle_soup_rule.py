@@ -78,45 +78,59 @@ class TurtleSoupRule(RuleBase):
 
     @staticmethod
     def __check_upper_liquidity_raid(bars_slice: List[Bar], liquidity_pool: float) -> bool:
-        is_close_below_liquidity_pool = False
-        is_close_above_liquidity_pool = False
-        is_open_below_liquidity_pool = False
+        """
+        True if, in order within bars_slice, we see:
+        1) a bar with close < liquidity_pool,
+        2) then a bar with close > liquidity_pool,
+        3) then a bar with open < liquidity_pool.
+        """
+        seen_close_below = False
+        seen_close_above = False
 
         for bar in bars_slice:
-            if not is_close_below_liquidity_pool and bar.close < liquidity_pool:
-                is_close_below_liquidity_pool = True
+            if not seen_close_below:
+                if bar.close < liquidity_pool:
+                    seen_close_below = True
                 continue
-            if not is_close_above_liquidity_pool and bar.close > liquidity_pool:
-                is_close_above_liquidity_pool = True
-                continue
-            if not is_open_below_liquidity_pool and bar.open < liquidity_pool:
-                is_open_below_liquidity_pool = True
-                continue
-            if is_close_below_liquidity_pool and is_close_above_liquidity_pool and is_open_below_liquidity_pool:
-                break
 
-        return is_close_below_liquidity_pool and is_close_above_liquidity_pool and is_open_below_liquidity_pool
+            if not seen_close_above:
+                if bar.close > liquidity_pool:
+                    seen_close_above = True
+                continue
+
+            # both conditions satisfied; now require open below
+            if bar.open < liquidity_pool:
+                return True
+
+        return False
 
     @staticmethod
     def __check_lower_liquidity_raid(bars_slice: List[Bar], liquidity_pool: float) -> bool:
-        is_close_above_liquidity_pool = False
-        is_close_below_liquidity_pool = False
-        is_open_above_liquidity_pool = False
+        """
+        True if, in order within bars_slice, we see:
+        1) a bar with close > liquidity_pool,
+        2) then a bar with close < liquidity_pool,
+        3) then a bar with open > liquidity_pool.
+        """
+        seen_close_above = False
+        seen_close_below = False
 
         for bar in bars_slice:
-            if not is_close_above_liquidity_pool and bar.close > liquidity_pool:
-                is_close_above_liquidity_pool = True
+            if not seen_close_above:
+                if bar.close > liquidity_pool:
+                    seen_close_above = True
                 continue
-            if not is_close_below_liquidity_pool and bar.close < liquidity_pool:
-                is_close_below_liquidity_pool = True
-                continue
-            if not is_open_above_liquidity_pool and bar.open > liquidity_pool:
-                is_open_above_liquidity_pool = True
-                continue
-            if is_close_above_liquidity_pool and is_close_below_liquidity_pool and is_open_above_liquidity_pool:
-                break
 
-        return is_close_above_liquidity_pool and is_close_below_liquidity_pool and is_open_above_liquidity_pool
+            if not seen_close_below:
+                if bar.close < liquidity_pool:
+                    seen_close_below = True
+                continue
+
+            # both conditions satisfied; now require open above
+            if bar.open > liquidity_pool:
+                return True
+
+        return False
 
     def on_start(self) -> None:
         """Actions to be performed on strategy start."""

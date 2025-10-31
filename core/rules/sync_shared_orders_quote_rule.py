@@ -37,6 +37,20 @@ class SyncSharedOrdersQuoteRule(QuoteTickRuleBase):
         if not orders_list:
             return False
 
+        entry_orders_filled = True
+        entry_orders: list[Order] = []
+        for orders in orders_list:
+            entry_order: Order = orders.get(SharedDictKeyBase.ENTRY_ORDER)
+            if entry_order is None:
+                entry_orders_filled = False
+                continue
+            entry_orders.append(entry_order)
+            if not entry_order.is_closed:
+                entry_orders_filled = False
+
+        if not entry_orders_filled:
+            return True
+
         open_positions = self.strategy.cache.positions_open()
         if not open_positions:
             if len(orders_list) > 0:
@@ -61,10 +75,18 @@ class SyncSharedOrdersQuoteRule(QuoteTickRuleBase):
             sl_order: Order = orders.get(SharedDictKeyBase.SL_ORDER)
             sl_order_id: ClientOrderId = sl_order.client_order_id
 
+            tp_order: Order = orders.get(SharedDictKeyBase.TP_ORDER)
+            tp_order_id: ClientOrderId = tp_order.client_order_id if tp_order else None
+
             if not entry_order_exists:
                 updated_sl_order = self.strategy.cache.order(sl_order_id)
                 if updated_sl_order is not None and updated_sl_order.is_open and not updated_sl_order.is_canceled:
                     self.strategy.cancel_order(updated_sl_order)
+
+                if tp_order_id:
+                    updated_tp_order = self.strategy.cache.order(tp_order_id)
+                    if updated_tp_order is not None and updated_tp_order.is_open and not updated_tp_order.is_canceled:
+                        self.strategy.cancel_order(updated_tp_order)
 
                 orders_to_remove.append(orders)
 
