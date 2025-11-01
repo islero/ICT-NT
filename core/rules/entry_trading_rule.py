@@ -110,7 +110,7 @@ class EntryTradingRule(RuleBase):
 
         if tp_price:
             # 2) TAKE PROFIT
-            tp_order = self.strategy.order_factory.stop_market(
+            tp_order = self.strategy.order_factory.market_if_touched(
                 instrument_id=instrument.id,
                 order_side=exit_side,
                 quantity=quantity,
