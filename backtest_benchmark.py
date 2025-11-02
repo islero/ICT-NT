@@ -55,11 +55,10 @@ data = BacktestDataConfig(
 engine = BacktestEngineConfig(
     strategies=[
         ImportableStrategyConfig(
-            strategy_path="strategies.turtle_soup.turtle_soup_strategy:TurtleSoupStrategy",
-            config_path="strategies.turtle_soup.turtle_soup_strategy:TurtleSoupStrategyConfig",
+            strategy_path="strategies.empty.empty_strategy:EmptyStrategy",
+            config_path="strategies.empty.empty_strategy:EmptyStrategyConfig",
             config={
                 "base_bar_type": base_bar_type,
-                "is_backtest": True,
             },
         ),
     ],

@@ -23,6 +23,7 @@ class TurtleSoupStrategyConfig(StrategyConfig, frozen=True):
     turtle_soup_bar_type: BarType                         # target bar type to search the liquidity pools
     turtle_soup_analysis_chain_bar_type: List[BarType]    # target bar type to search the liquidity pools
     turtle_soup_bars_count: int                           # how many bars to consider when forming a turtle soup
+    retries_count_on_stop_out: int                        # e.g., 2 - means 2 retries on the same day
 
     risk_reward_ratio: float                              # TP to SL ratio, which is actually R:R ratio
 
@@ -55,7 +56,8 @@ class TurtleSoupStrategy(RuleBasedStrategy):
         turtle_soup_rule_config = TurtleSoupMultiTFRuleConfig(levels_sources=[config.liquidity_pool_bar_type],
                                                               analysis_chain=config.turtle_soup_analysis_chain_bar_type,
                                                               start_from=config.turtle_soup_bar_type,
-                                                              turtle_bars_count=config.turtle_soup_bars_count)
+                                                              turtle_bars_count=config.turtle_soup_bars_count,
+                                                              retries_count_on_stop_out=config.retries_count_on_stop_out)
         turtle_soup_rule = TurtleSoupMultiTFRule(self.shared_state, self, turtle_soup_rule_config)
 
         entry_turtle_soup_rule_config = EntryTurtleSoupRuleConfig(config.risk_reward_ratio)
