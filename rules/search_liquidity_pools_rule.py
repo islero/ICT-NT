@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 import pandas as pd
 from nautilus_trader.model import BarType, Bar
 from nautilus_trader.trading import Strategy
@@ -48,13 +48,22 @@ class SearchLiquidityPoolsRule(RuleBase):
             upper_period_bars = bars[:self.config.upper_period_window]
             lower_period_bars = bars[:self.config.lower_period_window]
 
+        # Creating maps for upper and lower liquidity pools or getting them from the shared state
+        uppers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, {})
+        lowers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS, {})
+
         # Extract highs for an upper window and lows for a lower window. Convert to float for consistency.
         upper_highs = [float(b.high) for b in upper_period_bars if b is not None]
         lower_lows = [float(b.low) for b in lower_period_bars if b is not None]
 
+        # Saving the highs/lows for the selected bar type
+        tf_key = str(self.config.bar_type.standard())
+        uppers_map[tf_key] = upper_highs
+        lowers_map[tf_key] = lower_lows
+
         # Set the upper and lower liquidity pools based on highs/lows in the selected windows
-        self.shared_state.set(SharedDictKey.UPPER_LIQUIDITY_POOLS, upper_highs)
-        self.shared_state.set(SharedDictKey.LOWER_LIQUIDITY_POOLS, lower_lows)
+        self.shared_state.set(SharedDictKey.UPPER_LIQUIDITY_POOLS, uppers_map)
+        self.shared_state.set(SharedDictKey.LOWER_LIQUIDITY_POOLS, lowers_map)
 
         return True
 

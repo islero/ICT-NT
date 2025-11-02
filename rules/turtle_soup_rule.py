@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 import pandas as pd
 from nautilus_trader.model import BarType, Bar
 from nautilus_trader.trading import Strategy
@@ -35,14 +35,18 @@ class TurtleSoupRule(RuleBase):
 
         bars_slice: List[Bar] = bars[:self.config.turtle_bars_count]
 
-        upper_liquidity_pools: List[float] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, None)
-        if upper_liquidity_pools:
+        # Upper pools: dict -> flat list
+        upper_liquidity_pools_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS,None)
+        if upper_liquidity_pools_map:
+            upper_liquidity_pools: List[float] = [p for ps in upper_liquidity_pools_map.values() for p in ps]
             if self.__handle_upper_liquidity_raid(bars_slice, upper_liquidity_pools):
                 self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.SELL)
                 return True
 
-        lower_liquidity_pools: List[float] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS, None)
-        if lower_liquidity_pools:
+        # Lower pools: dict -> flat list
+        lower_liquidity_pools_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS,None)
+        if lower_liquidity_pools_map:
+            lower_liquidity_pools: List[float] = [p for ps in lower_liquidity_pools_map.values() for p in ps]
             if self.__handle_lower_liquidity_raid(bars_slice, lower_liquidity_pools):
                 self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.BUY)
                 return True

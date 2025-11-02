@@ -1,3 +1,5 @@
+from typing import List
+
 import pandas as pd
 from nautilus_trader.core.datetime import dt_to_unix_nanos
 from nautilus_trader.model import BarType, InstrumentId
@@ -8,6 +10,7 @@ from core.strategies import RuleBasedStrategy
 from rules.debug_rule import DebugRule
 from rules.entry_turtle_soup_rule import EntryTurtleSoupRuleConfig, EntryTurtleSoupRule
 from rules.search_liquidity_pools_rule import SearchLiquidityPoolsRuleConfig, SearchLiquidityPoolsRule
+from rules.turtle_soup_multi_tf_rule import TurtleSoupMultiTFRuleConfig, TurtleSoupMultiTFRule
 from rules.turtle_soup_rule import TurtleSoupRuleConfig, TurtleSoupRule
 
 class TurtleSoupStrategyConfig(StrategyConfig, frozen=True):
@@ -17,10 +20,11 @@ class TurtleSoupStrategyConfig(StrategyConfig, frozen=True):
     liquidity_pool_lower_period_window: int                # the lower period window | 3 on 1D TF means the last 3 daily bars lows inclusive
 
     """Configuration for turtle soup rule."""
-    turtle_soup_bar_type: BarType          # target bar type to search the liquidity pools
-    turtle_soup_bars_count: int            # how many bars to consider when forming a turtle soup
+    turtle_soup_bar_type: BarType                         # target bar type to search the liquidity pools
+    turtle_soup_analysis_chain_bar_type: List[BarType]    # target bar type to search the liquidity pools
+    turtle_soup_bars_count: int                           # how many bars to consider when forming a turtle soup
 
-    risk_reward_ratio: float               # TP to SL ratio, which is actually R:R ratio
+    risk_reward_ratio: float                              # TP to SL ratio, which is actually R:R ratio
 
     # ------------- Money Management -------------
     money_management_type: MoneyManagementType
@@ -45,8 +49,14 @@ class TurtleSoupStrategy(RuleBasedStrategy):
                                                                            config.liquidity_pool_lower_period_window,)
         search_liquidity_pool_rule = SearchLiquidityPoolsRule(self.shared_state, self, search_liquidity_pool_rule_config)
 
-        turtle_soup_rule_config = TurtleSoupRuleConfig(config.turtle_soup_bar_type, config.turtle_soup_bars_count)
-        turtle_soup_rule = TurtleSoupRule(self.shared_state, self, turtle_soup_rule_config)
+        #turtle_soup_rule_config = TurtleSoupRuleConfig(config.turtle_soup_bar_type, config.turtle_soup_bars_count)
+        #turtle_soup_rule = TurtleSoupRule(self.shared_state, self, turtle_soup_rule_config)
+
+        turtle_soup_rule_config = TurtleSoupMultiTFRuleConfig(levels_sources=[config.liquidity_pool_bar_type],
+                                                              analysis_chain=config.turtle_soup_analysis_chain_bar_type,
+                                                              start_from=config.turtle_soup_bar_type,
+                                                              turtle_bars_count=config.turtle_soup_bars_count)
+        turtle_soup_rule = TurtleSoupMultiTFRule(self.shared_state, self, turtle_soup_rule_config)
 
         entry_turtle_soup_rule_config = EntryTurtleSoupRuleConfig(config.risk_reward_ratio)
         entry_turtle_soup_rule = EntryTurtleSoupRule(self.shared_state, self, entry_turtle_soup_rule_config)
@@ -57,7 +67,7 @@ class TurtleSoupStrategy(RuleBasedStrategy):
 
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
-            DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-06-02 00:00:00"))),
+            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-06-02 00:00:00"))),
             search_liquidity_pool_rule,
             turtle_soup_rule,
             entry_turtle_soup_rule,
