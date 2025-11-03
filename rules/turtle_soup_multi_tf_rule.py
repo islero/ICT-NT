@@ -231,7 +231,13 @@ class TurtleSoupMultiTFRule(RuleBase):
                 continue
             if self.__check_upper_liquidity_raid(bars_slice, pool):
                 self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, pool)
-                bars_slice_highs = [float(b.high) for b in bars_slice if b is not None]
+
+                # Stop Loss bars slice
+                sl_bars: List[Bar] = self.strategy.cache.bars(self.config.start_from.standard())
+                if not sl_bars or len(sl_bars) < self.config.turtle_bars_count:
+                    continue
+                bars_slice_sl = sl_bars[:self.config.turtle_bars_count]
+                bars_slice_highs = [float(b.high) for b in bars_slice_sl if b is not None]
                 self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(bars_slice_highs))
                 return pool
         return None
@@ -261,7 +267,13 @@ class TurtleSoupMultiTFRule(RuleBase):
                 continue
             if self.__check_lower_liquidity_raid(bars_slice, pool):
                 self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, pool)
-                bars_slice_lows = [float(b.low) for b in bars_slice if b is not None]
+
+                # Stop Loss bars slice
+                sl_bars: List[Bar] = self.strategy.cache.bars(self.config.start_from.standard())
+                if not sl_bars or len(sl_bars) < self.config.turtle_bars_count:
+                    continue
+                bars_slice_sl = sl_bars[:self.config.turtle_bars_count]
+                bars_slice_lows = [float(b.low) for b in bars_slice_sl if b is not None]
                 self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(bars_slice_lows))
                 return pool
         return None

@@ -31,6 +31,11 @@ class EntryTurtleSoupRule(RuleBase):
         if turtle_soup_signal not in (RuleSignal.BUY, RuleSignal.BOTH):
             return False
 
+        # Determine a SMA filter direction
+        sma_filter_signal: Optional[RuleSignal] = self.shared_state.get(SharedDictKey.SMA_FILTER_SIGNAL)
+        if sma_filter_signal not in (RuleSignal.BUY, RuleSignal.BOTH):
+            return False
+
         stop_loss_price = self.shared_state.get(SharedDictKeyBase.ENTRY_SL_PRICE, None)
         if stop_loss_price is None:
             return False
@@ -49,6 +54,11 @@ class EntryTurtleSoupRule(RuleBase):
         # Determine a Turtle Soup direction
         turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL)
         if turtle_soup_signal not in (RuleSignal.SELL, RuleSignal.BOTH):
+            return False
+
+        # Determine a SMA filter direction
+        sma_filter_signal: Optional[RuleSignal] = self.shared_state.get(SharedDictKey.SMA_FILTER_SIGNAL)
+        if sma_filter_signal not in (RuleSignal.SELL, RuleSignal.BOTH):
             return False
 
         stop_loss_price = self.shared_state.get(SharedDictKeyBase.ENTRY_SL_PRICE, None)

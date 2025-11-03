@@ -10,6 +10,7 @@ from core.strategies import RuleBasedStrategy
 from rules.debug_rule import DebugRule
 from rules.entry_turtle_soup_rule import EntryTurtleSoupRuleConfig, EntryTurtleSoupRule
 from rules.search_liquidity_pools_rule import SearchLiquidityPoolsRuleConfig, SearchLiquidityPoolsRule
+from rules.sma_filter_rule import SMAFilterRuleConfig, SMAFilterRule
 from rules.turtle_soup_multi_tf_rule import TurtleSoupMultiTFRuleConfig, TurtleSoupMultiTFRule
 from rules.turtle_soup_rule import TurtleSoupRuleConfig, TurtleSoupRule
 
@@ -26,6 +27,10 @@ class TurtleSoupStrategyConfig(StrategyConfig, frozen=True):
     retries_count_on_stop_out: int                        # e.g., 2 - means 2 retries on the same day
 
     risk_reward_ratio: float                              # TP to SL ratio, which is actually R:R ratio
+
+    # ------------- SMA Filter -------------
+    sma_filter_bar_type: BarType                          # bar type for SMA filter (default 1-DAY)
+    sma_filter_period: int                                # SMA period (default 50)
 
     # ------------- Money Management -------------
     money_management_type: MoneyManagementType
@@ -60,6 +65,9 @@ class TurtleSoupStrategy(RuleBasedStrategy):
                                                               retries_count_on_stop_out=config.retries_count_on_stop_out)
         turtle_soup_rule = TurtleSoupMultiTFRule(self.shared_state, self, turtle_soup_rule_config)
 
+        sma_filter_rule_config = SMAFilterRuleConfig(config.sma_filter_bar_type, config.sma_filter_period)
+        sma_filter_rule = SMAFilterRule(self.shared_state, self, sma_filter_rule_config)
+
         entry_turtle_soup_rule_config = EntryTurtleSoupRuleConfig(config.risk_reward_ratio)
         entry_turtle_soup_rule = EntryTurtleSoupRule(self.shared_state, self, entry_turtle_soup_rule_config)
 
@@ -69,8 +77,9 @@ class TurtleSoupStrategy(RuleBasedStrategy):
 
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
-            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-06-02 00:00:00"))),
+            DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-10-17 08:50:00"))),
             search_liquidity_pool_rule,
+            sma_filter_rule,
             turtle_soup_rule,
             entry_turtle_soup_rule,
             entry_trading_rule

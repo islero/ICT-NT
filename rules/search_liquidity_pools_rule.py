@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Dict
 import pandas as pd
+from nautilus_trader.core import Data
 from nautilus_trader.model import BarType, Bar
 from nautilus_trader.trading import Strategy
 from constants.shared_dict_key import SharedDictKey
@@ -80,7 +81,7 @@ class SearchLiquidityPoolsRule(RuleBase):
             lst.append(self.config.bar_type.standard())
 
             now_ts = pd.Timestamp(self.strategy.clock.timestamp_ns(), tz="UTC", unit="ns")
-            start_time = (now_ts - pd.Timedelta(days=30)).normalize()
+            start_time = (now_ts - pd.Timedelta(days=89)).normalize()
 
             if self.is_backtest_mode:
                 self.strategy.request_aggregated_bars([self.config.bar_type], start=start_time,
@@ -99,3 +100,8 @@ class SearchLiquidityPoolsRule(RuleBase):
         lst = self.shared_state.get(key, [])
         if lst and self.config.bar_type.standard() in lst:
             lst.remove(self.config.bar_type.standard())
+
+    def on_historical_data(self, data: Data):
+        """This method is called by the framework (see actor.py docstring for on_historical_data)
+        Forward the payload to the rule:"""
+        pass
