@@ -40,6 +40,9 @@ class EntryTurtleSoupRule(RuleBase):
         if stop_loss_price is None:
             return False
 
+        if stop_loss_price >= current_bar.close:
+            return False
+
         take_profit_price = current_bar.close + (self.config.risk_reward_ratio * abs(current_bar.close - stop_loss_price))
 
         self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.BUY)
@@ -63,6 +66,9 @@ class EntryTurtleSoupRule(RuleBase):
 
         stop_loss_price = self.shared_state.get(SharedDictKeyBase.ENTRY_SL_PRICE, None)
         if stop_loss_price is None:
+            return False
+
+        if stop_loss_price <= current_bar.close:
             return False
 
         take_profit_price = current_bar.close - (self.config.risk_reward_ratio * abs(stop_loss_price - current_bar.close))

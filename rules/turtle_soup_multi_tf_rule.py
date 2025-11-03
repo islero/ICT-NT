@@ -238,7 +238,12 @@ class TurtleSoupMultiTFRule(RuleBase):
                     continue
                 bars_slice_sl = sl_bars[:self.config.turtle_bars_count]
                 bars_slice_highs = [float(b.high) for b in bars_slice_sl if b is not None]
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(bars_slice_highs))
+                highest_high_in_slice = max(bars_slice_highs)
+
+                bars_slice_current_tf_highs = [float(b.high) for b in bars_slice if b is not None]
+                highest_high_current_tf_in_slice = max(bars_slice_current_tf_highs)
+
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(highest_high_in_slice, highest_high_current_tf_in_slice))
                 return pool
         return None
 
@@ -274,7 +279,12 @@ class TurtleSoupMultiTFRule(RuleBase):
                     continue
                 bars_slice_sl = sl_bars[:self.config.turtle_bars_count]
                 bars_slice_lows = [float(b.low) for b in bars_slice_sl if b is not None]
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(bars_slice_lows))
+                lowest_low_in_slice = min(bars_slice_lows)
+
+                bars_slice_current_tf_lows = [float(b.low) for b in bars_slice if b is not None]
+                lowest_low_current_tf_in_slice = min(bars_slice_current_tf_lows)
+
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(lowest_low_in_slice, lowest_low_current_tf_in_slice))
                 return pool
         return None
 

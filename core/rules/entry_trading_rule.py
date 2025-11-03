@@ -11,6 +11,7 @@ from core.enums import MoneyManagementType
 from core.enums.rule_signal import RuleSignal
 from core.rules.rule_base import RuleBase
 from core.constants import SharedDictKeyBase
+from risk.my_fixed_risk_sizer import MyFixedRiskSizer
 
 
 class EntryTradingRule(RuleBase):
@@ -60,6 +61,10 @@ class EntryTradingRule(RuleBase):
 
         if self.money_management_type == MoneyManagementType.MIN_QUANTITY:
             quantity = instrument.min_quantity
+
+        # Validate quantity
+        if quantity <= 0:
+            return False
 
         # Map signal to order sides
         if entry_signal == RuleSignal.BUY:
@@ -261,15 +266,6 @@ class EntryTradingRule(RuleBase):
                 # Default to 1 to avoid crashing; sizing will be conservative if currencies match
                 xrate = Decimal("1")
 
-        # 4) Commission rate as a fraction of notional (use taker fee for market entries when available)
-        commission_rate = getattr(instrument, "taker_fee", None)
-        if commission_rate is None:
-            commission_rate = getattr(instrument, "maker_fee", None)
-        if commission_rate is None:
-            commission_rate = Decimal("0")
-        elif not isinstance(commission_rate, Decimal):
-            commission_rate = Decimal(str(commission_rate))
-
         risk = risk / Decimal("100")
 
         # 5) Resolve unit_batch_size as Decimal (fall back to 1)
@@ -289,17 +285,12 @@ class EntryTradingRule(RuleBase):
             ubs = Decimal("1")
 
         # 5) Compute quantity using FixedRiskSizer
-        sizer = FixedRiskSizer(instrument)
+        sizer = MyFixedRiskSizer(instrument)
         quantity = sizer.calculate(
             entry=entry_price,
             stop_loss=sl_price,
             equity=equity,
-            risk=risk,  # the risk is a PERCENT (1 = 1%) per docs
-            commission_rate=commission_rate,
-            exchange_rate=xrate,
-            hard_limit=None,
-            unit_batch_size=ubs,  # let sizer/venue handle rounding to size_increment
-            units=1,
+            risk=risk
         )
 
         return quantity
