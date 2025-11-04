@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
+
+import pandas as pd
 from nautilus_trader.model import Bar
 from nautilus_trader.trading import Strategy
 from constants.shared_dict_key import SharedDictKey
@@ -41,6 +43,9 @@ class EntryTurtleSoupRule(RuleBase):
             return False
 
         if stop_loss_price >= current_bar.close:
+            self.strategy.log.error(f"BUY sl {stop_loss_price} >= current bar close {current_bar.close}")
+            # Reset the rule signal
+            self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
             return False
 
         take_profit_price = current_bar.close + (self.config.risk_reward_ratio * abs(current_bar.close - stop_loss_price))
@@ -69,6 +74,9 @@ class EntryTurtleSoupRule(RuleBase):
             return False
 
         if stop_loss_price <= current_bar.close:
+            self.strategy.log.error(f"SELL sl {stop_loss_price} <= current bar close {current_bar.close}")
+            # Reset the rule signal
+            self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
             return False
 
         take_profit_price = current_bar.close - (self.config.risk_reward_ratio * abs(stop_loss_price - current_bar.close))

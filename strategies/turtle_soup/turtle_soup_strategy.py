@@ -77,7 +77,7 @@ class TurtleSoupStrategy(RuleBasedStrategy):
 
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
-            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-10-14 13:00:00"))),
+            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-10-14 13:45:00"))),
             search_liquidity_pool_rule,
             sma_filter_rule,
             turtle_soup_rule,

@@ -120,19 +120,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         # Reset all position flags
         for pool in self.pool_usage_tracker:
-            self.pool_usage_tracker[pool]['has_open_position'] = False
-
-        # Check if any open positions are using tracked pools
-        for pos in open_positions:
-            # Try to determine which pool this position is using
-            # We'll check the latest pools that were set
-            latest_upper = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, None)
-            latest_lower = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, None)
-
-            if latest_upper and latest_upper in self.pool_usage_tracker:
-                self.pool_usage_tracker[latest_upper]['has_open_position'] = True
-            if latest_lower and latest_lower in self.pool_usage_tracker:
-                self.pool_usage_tracker[latest_lower]['has_open_position'] = True
+            self.pool_usage_tracker[pool]['has_open_position'] = len(open_positions) > 0
 
     def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
         """Process an incoming bar and evaluate the rule conditions.
@@ -226,12 +214,7 @@ class TurtleSoupMultiTFRule(RuleBase):
             if not self._can_use_pool(pool, current_date):
                 continue
 
-            latest_pool = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, None)
-            if latest_pool and pool == latest_pool:
-                continue
             if self.__check_upper_liquidity_raid(bars_slice, pool):
-                self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, pool)
-
                 # Stop Loss bars slice
                 sl_bars: List[Bar] = self.strategy.cache.bars(self.config.start_from.standard())
                 if not sl_bars or len(sl_bars) < self.config.turtle_bars_count:
@@ -267,12 +250,7 @@ class TurtleSoupMultiTFRule(RuleBase):
             if not self._can_use_pool(pool, current_date):
                 continue
 
-            latest_pool = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, None)
-            if latest_pool and pool == latest_pool:
-                continue
             if self.__check_lower_liquidity_raid(bars_slice, pool):
-                self.shared_state.set(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, pool)
-
                 # Stop Loss bars slice
                 sl_bars: List[Bar] = self.strategy.cache.bars(self.config.start_from.standard())
                 if not sl_bars or len(sl_bars) < self.config.turtle_bars_count:
@@ -297,13 +275,12 @@ class TurtleSoupMultiTFRule(RuleBase):
         2) Then see a close above the level (raid).
         3) Finally, see an open back below the level (failure back-thru) -> confirm.
         """
-        seen_close_below = False
+        most_recent_bar = bars_slice[0]
+        if most_recent_bar.close > liquidity_pool:
+            return False
+
         seen_close_above = False
         for bar in bars_slice:
-            if not seen_close_below:
-                if bar.close < liquidity_pool:
-                    seen_close_below = True
-                continue
             if not seen_close_above:
                 if bar.close > liquidity_pool:
                     seen_close_above = True
@@ -317,17 +294,16 @@ class TurtleSoupMultiTFRule(RuleBase):
         """Detect a lower-liquidity raid pattern around the given level.
 
         Logic:
-        1) First see a close above the level.
+        1) First see a close above the level by the most recent bar.
         2) Then see a close below the level (raid).
         3) Finally, see an open back above the level (failure back-thru) -> confirm.
         """
-        seen_close_above = False
+        most_recent_bar = bars_slice[0]
+        if most_recent_bar.close < liquidity_pool:
+            return False
+
         seen_close_below = False
         for bar in bars_slice:
-            if not seen_close_above:
-                if bar.close > liquidity_pool:
-                    seen_close_above = True
-                continue
             if not seen_close_below:
                 if bar.close < liquidity_pool:
                     seen_close_below = True
