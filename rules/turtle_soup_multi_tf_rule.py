@@ -199,7 +199,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         A valid upper raid pattern is delegated to ``__check_upper_liquidity_raid``.
         When a raid is confirmed, the latest upper pool price and a suggested
-        stop-loss level (the max high in the slice) are stored in shared state.
+        stop-loss level (the max high in the slice) are stored in the shared state.
 
         Args:
             bars_slice: The most recent bars to evaluate (length ``turtle_bars_count``).
@@ -235,7 +235,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         A valid lower raid pattern is delegated to ``__check_lower_liquidity_raid``.
         When a raid is confirmed, the latest lower pool price and a suggested
-        stop-loss level (the min low in the slice) are stored in shared state.
+        stop-loss level (the min low in the slice) are stored in the shared state.
 
         Args:
             bars_slice: The most recent bars to evaluate (length ``turtle_bars_count``).
