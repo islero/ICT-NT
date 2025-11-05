@@ -175,7 +175,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
                 # First, look for an upper-liquidity raid
                 if upper_liquidity_pools:
-                    pool_used = self.__handle_upper_liquidity_raid(bars_slice, upper_liquidity_pools, current_date)
+                    pool_used = self.__handle_upper_liquidity_raid(bars_slice, upper_liquidity_pools, current_date, bar)
                     if pool_used is not None:
                         self._mark_pool_usage(pool_used, current_date)
                         self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.SELL)
@@ -183,7 +183,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
                 # Then, look for a lower-liquidity raid
                 if lower_liquidity_pools:
-                    pool_used = self.__handle_lower_liquidity_raid(bars_slice, lower_liquidity_pools, current_date)
+                    pool_used = self.__handle_lower_liquidity_raid(bars_slice, lower_liquidity_pools, current_date, bar)
                     if pool_used is not None:
                         self._mark_pool_usage(pool_used, current_date)
                         self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.BUY)
@@ -194,7 +194,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         return True
 
-    def __handle_upper_liquidity_raid(self, bars_slice: List[Bar], upper_liquidity_pools: List[float], current_date: str) -> Optional[float]:
+    def __handle_upper_liquidity_raid(self, bars_slice: List[Bar], upper_liquidity_pools: List[float], current_date: str, bar: Bar) -> Optional[float]:
         """Check if any upper liquidity pool was raided in the given bars slice.
 
         A valid upper raid pattern is delegated to ``__check_upper_liquidity_raid``.
@@ -226,11 +226,16 @@ class TurtleSoupMultiTFRule(RuleBase):
                 bars_slice_current_tf_highs = [float(b.high) for b in bars_slice if b is not None]
                 highest_high_current_tf_in_slice = max(bars_slice_current_tf_highs)
 
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(highest_high_in_slice, highest_high_current_tf_in_slice))
+                new_bar_bars = self.strategy.cache.bars(bar.bar_type.standard())
+                new_bar_slice = new_bar_bars[:self.config.turtle_bars_count]
+                new_bar_slice_highs = [float(b.high) for b in new_bar_slice if b is not None]
+                highest_high_new_bar_in_slice = max(new_bar_slice_highs)
+
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(highest_high_in_slice, highest_high_current_tf_in_slice, highest_high_new_bar_in_slice))
                 return pool
         return None
 
-    def __handle_lower_liquidity_raid(self, bars_slice: List[Bar], lower_liquidity_pools: List[float], current_date: str) -> Optional[float]:
+    def __handle_lower_liquidity_raid(self, bars_slice: List[Bar], lower_liquidity_pools: List[float], current_date: str, new_bar: Bar) -> Optional[float]:
         """Check if any lower liquidity pool was raided in the given bars slice.
 
         A valid lower raid pattern is delegated to ``__check_lower_liquidity_raid``.
@@ -262,7 +267,12 @@ class TurtleSoupMultiTFRule(RuleBase):
                 bars_slice_current_tf_lows = [float(b.low) for b in bars_slice if b is not None]
                 lowest_low_current_tf_in_slice = min(bars_slice_current_tf_lows)
 
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(lowest_low_in_slice, lowest_low_current_tf_in_slice))
+                new_bar_bars = self.strategy.cache.bars(new_bar.bar_type.standard())
+                new_bar_slice = new_bar_bars[:self.config.turtle_bars_count]
+                new_bar_slice_lows = [float(b.low) for b in new_bar_slice if b is not None]
+                lowest_low_new_bar_in_slice = min(new_bar_slice_lows)
+
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(lowest_low_in_slice, lowest_low_current_tf_in_slice, lowest_low_new_bar_in_slice))
                 return pool
         return None
 
