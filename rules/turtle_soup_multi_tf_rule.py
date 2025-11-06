@@ -60,7 +60,7 @@ class TurtleSoupMultiTFRule(RuleBase):
         if start_str not in chain_str:
             raise ValueError("start_from must be an element of analysis_chain")
 
-        # Track liquidity pool usage: {pool_price: {'date': str, 'attempts': int, 'has_open_position': bool}}
+        # Track liquidity pool usage: {pool_price: {'date': str, 'attempts': int}}
         self.pool_usage_tracker: Dict[float, Dict] = {}
 
     @staticmethod
@@ -83,7 +83,7 @@ class TurtleSoupMultiTFRule(RuleBase):
         tracker = self.pool_usage_tracker[pool]
 
         # Rule 1: Check for open position
-        if tracker.get('has_open_position', False):
+        if len(self.strategy.cache.positions_open()) > 0:
             return False
 
         # Rule 3: Check if used on a different day (not today)
@@ -102,7 +102,6 @@ class TurtleSoupMultiTFRule(RuleBase):
             self.pool_usage_tracker[pool] = {
                 'date': current_date,
                 'attempts': 1,
-                'has_open_position': True
             }
         else:
             tracker = self.pool_usage_tracker[pool]
@@ -112,15 +111,24 @@ class TurtleSoupMultiTFRule(RuleBase):
                 # New day, reset attempts
                 tracker['date'] = current_date
                 tracker['attempts'] = 1
-            tracker['has_open_position'] = True
 
-    def _update_pool_position_status(self):
-        """Update the position status for all tracked pools."""
-        open_positions = self.strategy.cache.positions_open()
+    def _cleanup_pool_tracker(self, upper_liquidity_pools: list[float], lower_liquidity_pools: list[float],
+                          current_date: str):
+        """Remove pools from the tracker that no longer exist in current liquidity pools or are older than 1 month."""
+        from datetime import datetime, timedelta
 
-        # Reset all position flags
+        valid_pools = set(upper_liquidity_pools + lower_liquidity_pools)
+        current_dt = datetime.strptime(current_date, '%Y-%m-%d')
+        one_month_ago = current_dt - timedelta(days=30)
+
+        pools_to_remove = []
         for pool in self.pool_usage_tracker:
-            self.pool_usage_tracker[pool]['has_open_position'] = len(open_positions) > 0
+            pool_date = datetime.strptime(self.pool_usage_tracker[pool]['date'], '%Y-%m-%d')
+            if pool not in valid_pools and pool_date < one_month_ago:
+                pools_to_remove.append(pool)
+
+        for pool in pools_to_remove:
+            del self.pool_usage_tracker[pool]
 
     def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
         """Process an incoming bar and evaluate the rule conditions.
@@ -136,9 +144,6 @@ class TurtleSoupMultiTFRule(RuleBase):
         Returns:
             True (the rule is non-blocking). Sets signals in a shared state when detected.
         """
-        # Update position status for tracked pools
-        self._update_pool_position_status()
-
         # Process only bars from subscribed TFs (any from analysis_chain or levels_sources)
         subscribed_tfs = {str(bt.standard()) for bt in (self.config.analysis_chain + self.config.levels_sources)}
         if str(bar.bar_type.standard()) not in subscribed_tfs and self.first_bar_initialized:
@@ -178,6 +183,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                     pool_used = self.__handle_upper_liquidity_raid(bars_slice, upper_liquidity_pools, current_date, bar)
                     if pool_used is not None:
                         self._mark_pool_usage(pool_used, current_date)
+                        self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
                         self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.SELL)
                         return True
 
@@ -186,6 +192,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                     pool_used = self.__handle_lower_liquidity_raid(bars_slice, lower_liquidity_pools, current_date, bar)
                     if pool_used is not None:
                         self._mark_pool_usage(pool_used, current_date)
+                        self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
                         self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.BUY)
                         return True
 
