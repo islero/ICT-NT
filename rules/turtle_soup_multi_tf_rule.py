@@ -71,20 +71,19 @@ class TurtleSoupMultiTFRule(RuleBase):
 
     def _can_use_pool(self, pool: float, current_date: str) -> bool:
         """Check if a liquidity pool can be used based on tracking rules.
-
         Rules:
         1. Cannot use if there's an open position on this pool
         2. Cannot use if already attempted 2 times today
         3. Cannot use if it was used on a previous day
         """
+        # Rule 1: Check for open position
+        if len(self.strategy.cache.positions_open()) > 0:
+            return False
+
         if pool not in self.pool_usage_tracker:
             return True
 
         tracker = self.pool_usage_tracker[pool]
-
-        # Rule 1: Check for open position
-        if len(self.strategy.cache.positions_open()) > 0:
-            return False
 
         # Rule 3: Check if used on a different day (not today)
         if tracker['date'] != current_date:
