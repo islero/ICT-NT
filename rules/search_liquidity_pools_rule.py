@@ -4,6 +4,8 @@ import pandas as pd
 from nautilus_trader.core import Data
 from nautilus_trader.model import BarType, Bar
 from nautilus_trader.trading import Strategy
+from pandas import Timedelta
+
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.constants import SharedDictKeyBase
@@ -15,6 +17,9 @@ class SearchLiquidityPoolsRuleConfig:
     bar_type: BarType                       # target bar type to search the liquidity pools
     upper_period_window: int                # the upper period window | 3 on 1D TF means the last 3 daily bars highs inclusive
     lower_period_window: int                # the lower period window | 3 on 1D TF means the last 3 daily bars lows inclusive
+    lower_bar_type: BarType                 # lower timeframe bar type for data sufficiency check (e.g., 1h for daily, 1d for weekly)
+    time_delta: Timedelta
+    min_data_count: int = 3                 # minimum number of lower timeframe bars required
 
 class SearchLiquidityPoolsRule(RuleBase):
     """
@@ -28,6 +33,19 @@ class SearchLiquidityPoolsRule(RuleBase):
         self.strategy = strategy
         self.config = config
         self.first_bar_initialized = False
+
+    def _has_sufficient_data(self, bar: Bar) -> bool:
+        """Check if the bar has minimum required data points from a lower timeframe."""
+        if self.config.lower_bar_type is None:
+            return True  # No validation if lower_bar_type not configured
+
+        lower_bars = self.strategy.cache.bars(self.config.lower_bar_type.standard())
+        if not lower_bars:
+            return False
+
+        count = sum(1 for b in lower_bars if bar.ts_init <= b.ts_init < bar.ts_init + self.config.time_delta.value)
+
+        return count >= self.config.min_data_count
 
     def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
         # Verify the bar type is correct
@@ -48,6 +66,10 @@ class SearchLiquidityPoolsRule(RuleBase):
         else:
             upper_period_bars = bars[:self.config.upper_period_window]
             lower_period_bars = bars[:self.config.lower_period_window]
+
+        # Filter bars that have sufficient data from a lower timeframe
+        upper_period_bars = [bars[i] for i in range(len(upper_period_bars)) if i == 0 or self._has_sufficient_data(bars[i])]
+        lower_period_bars = [bars[i] for i in range(len(lower_period_bars)) if i == 0 or self._has_sufficient_data(bars[i])]
 
         # Creating maps for upper and lower liquidity pools or getting them from the shared state
         uppers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, {})

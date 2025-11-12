@@ -4,6 +4,8 @@ import pandas as pd
 from nautilus_trader.core.datetime import dt_to_unix_nanos
 from nautilus_trader.model import BarType, InstrumentId
 from nautilus_trader.trading.config import StrategyConfig
+from pandas import Timedelta
+
 from core.enums import MoneyManagementType
 from core.rules import RuleBase, EntryTradingRule, SyncSharedOrdersQuoteRule
 from core.strategies import RuleBasedStrategy
@@ -17,6 +19,9 @@ from rules.turtle_soup_rule import TurtleSoupRuleConfig, TurtleSoupRule
 class TurtleSoupStrategyConfig(StrategyConfig, frozen=True):
     """Configuration for searching liquidity pools rule."""
     liquidity_pool_bar_type: BarType                       # target bar type to search the liquidity pools
+    liquidity_pool_lower_timeframe_bar_type: BarType
+    liquidity_pool_time_delta: Timedelta
+    liquidity_pool_min_lower_timeframe_count: int
     liquidity_pool_upper_period_window: int                # the upper period window | 3 on 1D TF means the last 3 daily bars highs inclusive
     liquidity_pool_lower_period_window: int                # the lower period window | 3 on 1D TF means the last 3 daily bars lows inclusive
 
@@ -52,7 +57,10 @@ class TurtleSoupStrategy(RuleBasedStrategy):
         # initialize rules
         search_liquidity_pool_rule_config = SearchLiquidityPoolsRuleConfig(config.liquidity_pool_bar_type,
                                                                            config.liquidity_pool_upper_period_window,
-                                                                           config.liquidity_pool_lower_period_window,)
+                                                                           config.liquidity_pool_lower_period_window,
+                                                                           config.liquidity_pool_lower_timeframe_bar_type,
+                                                                           config.liquidity_pool_time_delta,
+                                                                           config.liquidity_pool_min_lower_timeframe_count)
         search_liquidity_pool_rule = SearchLiquidityPoolsRule(self.shared_state, self, search_liquidity_pool_rule_config)
 
         #turtle_soup_rule_config = TurtleSoupRuleConfig(config.turtle_soup_bar_type, config.turtle_soup_bars_count)
@@ -77,7 +85,7 @@ class TurtleSoupStrategy(RuleBasedStrategy):
 
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
-            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-10-14 13:45:00"))),
+            DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-09-22 00:00:00"))),
             search_liquidity_pool_rule,
             sma_filter_rule,
             turtle_soup_rule,
