@@ -77,13 +77,16 @@ class TurtleSoupMultiTFRule(RuleBase):
         3. Cannot use if it was used on a previous day
         """
         # Rule 1: Check for open position
-        if len(self.strategy.cache.positions_open()) > 0:
-            return False
+
 
         if pool not in self.pool_usage_tracker:
             return True
 
         tracker = self.pool_usage_tracker[pool]
+
+        #TODO: this check has to be below the Rule 1 text
+        if len(self.strategy.cache.positions_open()) > 0:
+            return False
 
         # Rule 3: Check if used on a different day (not today)
         if tracker['date'] != current_date:
