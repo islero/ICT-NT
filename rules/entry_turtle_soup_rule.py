@@ -25,6 +25,11 @@ class EntryTurtleSoupRule(RuleBase):
         if not current_bar:
             return False
 
+        # Check if the date is 2025-09-15
+        bar_date = pd.Timestamp(current_bar.ts_init, unit='ns', tz='UTC').date()
+        if bar_date == pd.Timestamp('2025-09-15').date():
+            return False
+
         return self.check_long(current_bar) or self.check_short(current_bar)
 
     def check_long(self, current_bar: Bar) -> bool:

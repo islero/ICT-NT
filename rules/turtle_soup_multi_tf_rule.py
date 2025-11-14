@@ -20,14 +20,12 @@ class TurtleSoupMultiTFRuleConfig:
         analysis_chain: Ordered list of timeframes used for pattern analysis starting
             from a higher timeframe and going down to lower ones (e.g., daily, 4h, 1h,
             15m, 5m, 1m). Must include ``start_from``.
-        start_from: Timeframe in ``analysis_chain`` where analysis begins.
         turtle_bars_count: Number of most recent bars to consider when checking the
             Turtle Soup pattern.
         retries_count_on_stop_out: Number of retries on the same day only N position can be reopened if all conditions are met
     """
     levels_sources: List[BarType]      # e.g., [weekly, daily]
     analysis_chain: List[BarType]      # e.g., [daily, 4h, 1h, 15m, 5m, 1m]
-    start_from: BarType                # e.g., daily (must be present in analysis_chain)
     turtle_bars_count: int             # e.g., 4 means 4 bars are using to check the pattern
     retries_count_on_stop_out: int     # e.g., 2 - means 2 retries on the same day
 
@@ -52,16 +50,69 @@ class TurtleSoupMultiTFRule(RuleBase):
         super().__init__(shared_state)
         self.strategy = strategy
         self.config = config
-        self.first_bar_initialized = False
-
-        # Validate configuration
-        chain_str = [str(bt.standard()) for bt in self.config.analysis_chain]
-        start_str = str(self.config.start_from.standard())
-        if start_str not in chain_str:
-            raise ValueError("start_from must be an element of analysis_chain")
 
         # Track liquidity pool usage: {pool_price: {'date': str, 'attempts': int}}
         self.pool_usage_tracker: Dict[float, Dict] = {}
+
+    def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
+        """Process an incoming bar and evaluate the rule conditions.
+
+        The method only reacts to bars from subscribed timeframes (from either
+        ``analysis_chain`` or ``levels_sources``). It fetches precomputed
+        liquidity pools and scans the analysis chain to detect a Turtle Soup setup.
+
+        Args:
+            bar: The newly received bar (from any timeframe).
+            current_bar: Unused. Present for compatibility.
+
+        Returns:
+            True (the rule is non-blocking). Sets signals in a shared state when detected.
+        """
+        # Process only bars from subscribed TFs (any from analysis_chain or levels_sources)
+        subscribed_tfs = {str(bt.standard()) for bt in self.config.analysis_chain}
+        if str(bar.bar_type.standard()) not in subscribed_tfs:
+            return True
+
+        current_date = self._get_current_date(bar)
+
+        # Fetch levels maps produced by SearchLiquidityPoolsRule
+        uppers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, {})
+        lowers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS, {})
+
+        # 1) For each level source in order (e.g., Weekly, then Daily)
+        for levels_bt in self.config.levels_sources:
+            levels_key = str(levels_bt.standard())
+            upper_liquidity_pools = uppers_map.get(levels_key)
+            lower_liquidity_pools = lowers_map.get(levels_key)
+
+            # If there are no levels for this TF yet — skip and wait
+            if not upper_liquidity_pools and not lower_liquidity_pools:
+                continue
+
+            bars: List[Bar] = self.strategy.cache.bars(bar.bar_type.standard())
+            if not bars or len(bars) < self.config.turtle_bars_count:
+                continue
+            bars_slice = bars[:self.config.turtle_bars_count]
+
+            # First, look for an upper-liquidity raid
+            if upper_liquidity_pools:
+                pool_used = self.__handle_upper_liquidity_raid(bars_slice, upper_liquidity_pools, current_date, bar)
+                if pool_used is not None:
+                    self._mark_pool_usage(pool_used, current_date)
+                    self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
+                    self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.SELL)
+                    return True
+
+            # Then, look for a lower-liquidity raid
+            if lower_liquidity_pools:
+                pool_used = self.__handle_lower_liquidity_raid(bars_slice, lower_liquidity_pools, current_date, bar)
+                if pool_used is not None:
+                    self._mark_pool_usage(pool_used, current_date)
+                    self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
+                    self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.BUY)
+                    return True
+
+        return True
 
     @staticmethod
     def _get_current_date(bar: Bar) -> str:
@@ -132,77 +183,6 @@ class TurtleSoupMultiTFRule(RuleBase):
         for pool in pools_to_remove:
             del self.pool_usage_tracker[pool]
 
-    def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
-        """Process an incoming bar and evaluate the rule conditions.
-
-        The method only reacts to bars from subscribed timeframes (from either
-        ``analysis_chain`` or ``levels_sources``). It fetches precomputed
-        liquidity pools and scans the analysis chain to detect a Turtle Soup setup.
-
-        Args:
-            bar: The newly received bar (from any timeframe).
-            current_bar: Unused. Present for compatibility.
-
-        Returns:
-            True (the rule is non-blocking). Sets signals in a shared state when detected.
-        """
-        # Process only bars from subscribed TFs (any from analysis_chain or levels_sources)
-        subscribed_tfs = {str(bt.standard()) for bt in (self.config.analysis_chain + self.config.levels_sources)}
-        if str(bar.bar_type.standard()) not in subscribed_tfs and self.first_bar_initialized:
-            return True
-        if not self.first_bar_initialized:
-            self.first_bar_initialized = True
-
-        current_date = self._get_current_date(bar)
-
-        # Fetch levels maps produced by SearchLiquidityPoolsRule
-        uppers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, {})
-        lowers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS, {})
-
-        # 1) For each level source in order (e.g., Weekly, then Daily)
-        for levels_bt in self.config.levels_sources:
-            levels_key = str(levels_bt.standard())
-            upper_liquidity_pools = uppers_map.get(levels_key)
-            lower_liquidity_pools = lowers_map.get(levels_key)
-
-            # If there are no levels for this TF yet — skip and wait
-            if not upper_liquidity_pools and not lower_liquidity_pools:
-                continue
-
-            # 2) Determine the starting point within analysis_chain
-            chain = self.config.analysis_chain
-            start_idx = [str(bt.standard()) for bt in chain].index(str(self.config.start_from.standard()))
-
-            # 3) Iterate analysis TFs from start_idx down to lower TFs
-            for bt in chain[start_idx:]:
-                bars: List[Bar] = self.strategy.cache.bars(bt.standard())
-                if not bars or len(bars) < self.config.turtle_bars_count:
-                    continue
-                bars_slice = bars[:self.config.turtle_bars_count]
-
-                # First, look for an upper-liquidity raid
-                if upper_liquidity_pools:
-                    pool_used = self.__handle_upper_liquidity_raid(bars_slice, upper_liquidity_pools, current_date, bar)
-                    if pool_used is not None:
-                        self._mark_pool_usage(pool_used, current_date)
-                        self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
-                        self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.SELL)
-                        return True
-
-                # Then, look for a lower-liquidity raid
-                if lower_liquidity_pools:
-                    pool_used = self.__handle_lower_liquidity_raid(bars_slice, lower_liquidity_pools, current_date, bar)
-                    if pool_used is not None:
-                        self._mark_pool_usage(pool_used, current_date)
-                        self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
-                        self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.BUY)
-                        return True
-
-            # If nothing is found for the current level source (e.g., Weekly),
-            # move on to the next source (e.g., Daily) and repeat.
-
-        return True
-
     def __handle_upper_liquidity_raid(self, bars_slice: List[Bar], upper_liquidity_pools: List[float], current_date: str, bar: Bar) -> Optional[float]:
         """Check if any upper liquidity pool was raided in the given bars slice.
 
@@ -225,12 +205,6 @@ class TurtleSoupMultiTFRule(RuleBase):
 
             if self.__check_upper_liquidity_raid(bars_slice, pool):
                 # Stop Loss bars slice
-                sl_bars: List[Bar] = self.strategy.cache.bars(self.config.start_from.standard())
-                if not sl_bars or len(sl_bars) < self.config.turtle_bars_count:
-                    continue
-                bars_slice_sl = sl_bars[:self.config.turtle_bars_count]
-                bars_slice_highs = [float(b.high) for b in bars_slice_sl if b is not None]
-                highest_high_in_slice = max(bars_slice_highs)
 
                 bars_slice_current_tf_highs = [float(b.high) for b in bars_slice if b is not None]
                 highest_high_current_tf_in_slice = max(bars_slice_current_tf_highs)
@@ -240,7 +214,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                 new_bar_slice_highs = [float(b.high) for b in new_bar_slice if b is not None]
                 highest_high_new_bar_in_slice = max(new_bar_slice_highs)
 
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(highest_high_in_slice, highest_high_current_tf_in_slice, highest_high_new_bar_in_slice))
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(highest_high_current_tf_in_slice, highest_high_new_bar_in_slice))
                 return pool
         return None
 
@@ -266,13 +240,6 @@ class TurtleSoupMultiTFRule(RuleBase):
 
             if self.__check_lower_liquidity_raid(bars_slice, pool):
                 # Stop Loss bars slice
-                sl_bars: List[Bar] = self.strategy.cache.bars(self.config.start_from.standard())
-                if not sl_bars or len(sl_bars) < self.config.turtle_bars_count:
-                    continue
-                bars_slice_sl = sl_bars[:self.config.turtle_bars_count]
-                bars_slice_lows = [float(b.low) for b in bars_slice_sl if b is not None]
-                lowest_low_in_slice = min(bars_slice_lows)
-
                 bars_slice_current_tf_lows = [float(b.low) for b in bars_slice if b is not None]
                 lowest_low_current_tf_in_slice = min(bars_slice_current_tf_lows)
 
@@ -281,7 +248,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                 new_bar_slice_lows = [float(b.low) for b in new_bar_slice if b is not None]
                 lowest_low_new_bar_in_slice = min(new_bar_slice_lows)
 
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(lowest_low_in_slice, lowest_low_current_tf_in_slice, lowest_low_new_bar_in_slice))
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(lowest_low_current_tf_in_slice, lowest_low_new_bar_in_slice))
                 return pool
         return None
 

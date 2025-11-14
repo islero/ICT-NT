@@ -68,7 +68,6 @@ class TurtleSoupStrategy(RuleBasedStrategy):
 
         turtle_soup_rule_config = TurtleSoupMultiTFRuleConfig(levels_sources=[config.liquidity_pool_bar_type],
                                                               analysis_chain=config.turtle_soup_analysis_chain_bar_type,
-                                                              start_from=config.turtle_soup_bar_type,
                                                               turtle_bars_count=config.turtle_soup_bars_count,
                                                               retries_count_on_stop_out=config.retries_count_on_stop_out)
         turtle_soup_rule = TurtleSoupMultiTFRule(self.shared_state, self, turtle_soup_rule_config)
@@ -85,7 +84,7 @@ class TurtleSoupStrategy(RuleBasedStrategy):
 
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
-            DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-09-22 00:00:00"))),
+            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-09-22 00:00:00"))),
             search_liquidity_pool_rule,
             sma_filter_rule,
             turtle_soup_rule,
