@@ -12,6 +12,7 @@ from core.strategies import RuleBasedStrategy
 from rules.debug_rule import DebugRule
 from rules.entry_turtle_soup_rule import EntryTurtleSoupRuleConfig, EntryTurtleSoupRule
 from rules.expected_target_rule import ExpectedTargetRule, ExpectedTargetRuleConfig
+from rules.reward_risk_ratio_rule import RewardRiskRatioRule, RewardRiskRatioRuleConfig
 from rules.search_liquidity_pools_rule import SearchLiquidityPoolsRuleConfig, SearchLiquidityPoolsRule
 from rules.sma_filter_rule import SMAFilterRuleConfig, SMAFilterRule
 from rules.turtle_soup_multi_tf_rule import TurtleSoupMultiTFRuleConfig, TurtleSoupMultiTFRule
@@ -86,6 +87,9 @@ class TurtleSoupStrategy(RuleBasedStrategy):
                                                                config.expected_target_right)
         expected_target_rule = ExpectedTargetRule(self.shared_state, self, expected_target_rule_config)
 
+        reward_risk_ratio_rule_config = RewardRiskRatioRuleConfig(config.risk_reward_ratio)
+        reward_risk_ratio_rule = RewardRiskRatioRule(self.shared_state, self, reward_risk_ratio_rule_config)
+
         entry_turtle_soup_rule_config = EntryTurtleSoupRuleConfig(config.risk_reward_ratio)
         entry_turtle_soup_rule = EntryTurtleSoupRule(self.shared_state, self, entry_turtle_soup_rule_config)
 
@@ -95,11 +99,12 @@ class TurtleSoupStrategy(RuleBasedStrategy):
 
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
-            DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-09-25 00:00:00"))),
+            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-09-25 00:00:00"))),
             search_liquidity_pool_rule,
             sma_filter_rule,
             expected_target_rule,
             turtle_soup_rule,
+            reward_risk_ratio_rule,
             entry_turtle_soup_rule,
             entry_trading_rule
         ]
