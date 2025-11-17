@@ -138,7 +138,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         tracker = self.pool_usage_tracker[unique_key]
 
-        #TODO: this check has to be below the Rule 1 text
+        #TODO: this check has to be checked first
         if len(self.strategy.cache.positions_open()) > 0:
             return False
 
@@ -149,6 +149,8 @@ class TurtleSoupMultiTFRule(RuleBase):
         # Rule 2: Check if already attempted 2 times today
         if tracker['date'] == current_date and tracker.get('attempts', 0) >= self.config.retries_count_on_stop_out:
             return False
+
+        # TODO: implement liquidity_pool_reuse_rule functionality here
 
         return True
 
