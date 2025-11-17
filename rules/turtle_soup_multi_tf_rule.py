@@ -52,7 +52,7 @@ class TurtleSoupMultiTFRule(RuleBase):
         self.config = config
 
         # Track liquidity pool usage: {pool_price: {'date': str, 'attempts': int}}
-        self.pool_usage_tracker: Dict[float, Dict] = {}
+        self.pool_usage_tracker: Dict[str, Dict] = {}
 
     def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
         """Process an incoming bar and evaluate the rule conditions.
@@ -76,8 +76,8 @@ class TurtleSoupMultiTFRule(RuleBase):
         current_date = self._get_current_date(bar)
 
         # Fetch levels maps produced by SearchLiquidityPoolsRule
-        uppers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, {})
-        lowers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS, {})
+        uppers_map: Dict[str, List[tuple[float, int]]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, {})
+        lowers_map: Dict[str, List[tuple[float, int]]] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS, {})
 
         # 1) For each level source in order (e.g., Weekly, then Daily)
         for levels_bt in self.config.levels_sources:
@@ -101,6 +101,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                     self._mark_pool_usage(pool_used, current_date)
                     self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
                     self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.SELL)
+                    self.shared_state.set(SharedDictKey.TURTLE_SOUP_USED_POOL, pool_used)
                     return True
 
             # Then, look for a lower-liquidity raid
@@ -110,6 +111,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                     self._mark_pool_usage(pool_used, current_date)
                     self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
                     self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.BUY)
+                    self.shared_state.set(SharedDictKey.TURTLE_SOUP_USED_POOL, pool_used)
                     return True
 
         return True
@@ -120,7 +122,7 @@ class TurtleSoupMultiTFRule(RuleBase):
         bar_ts = pd.Timestamp(bar.ts_init, tz="UTC", unit="ns")
         return bar_ts.strftime("%Y-%m-%d")
 
-    def _can_use_pool(self, pool: float, current_date: str) -> bool:
+    def _can_use_pool(self, pool: tuple[float, int], current_date: str) -> bool:
         """Check if a liquidity pool can be used based on tracking rules.
         Rules:
         1. Cannot use if there's an open position on this pool
@@ -128,12 +130,13 @@ class TurtleSoupMultiTFRule(RuleBase):
         3. Cannot use if it was used on a previous day
         """
         # Rule 1: Check for open position
+        price, ts_init = pool
+        unique_key = f"{ts_init}:{price:.8f}"
 
-
-        if pool not in self.pool_usage_tracker:
+        if unique_key not in self.pool_usage_tracker:
             return True
 
-        tracker = self.pool_usage_tracker[pool]
+        tracker = self.pool_usage_tracker[unique_key]
 
         #TODO: this check has to be below the Rule 1 text
         if len(self.strategy.cache.positions_open()) > 0:
@@ -149,15 +152,18 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         return True
 
-    def _mark_pool_usage(self, pool: float, current_date: str):
+    def _mark_pool_usage(self, pool: tuple[float, int], current_date: str):
         """Mark a liquidity pool as used for the current date."""
-        if pool not in self.pool_usage_tracker:
-            self.pool_usage_tracker[pool] = {
+        price, ts_init = pool
+        unique_key = f"{ts_init}:{price:.8f}"
+
+        if unique_key not in self.pool_usage_tracker:
+            self.pool_usage_tracker[unique_key] = {
                 'date': current_date,
                 'attempts': 1,
             }
         else:
-            tracker = self.pool_usage_tracker[pool]
+            tracker = self.pool_usage_tracker[unique_key]
             if tracker['date'] == current_date:
                 tracker['attempts'] = tracker.get('attempts', 0) + 1
             else:
@@ -165,7 +171,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                 tracker['date'] = current_date
                 tracker['attempts'] = 1
 
-    def _cleanup_pool_tracker(self, upper_liquidity_pools: list[float], lower_liquidity_pools: list[float],
+    def _cleanup_pool_tracker(self, upper_liquidity_pools: list[tuple[float, int]], lower_liquidity_pools: list[tuple[float, int]],
                           current_date: str):
         """Remove pools from the tracker that no longer exist in current liquidity pools or are older than 1 month."""
         from datetime import datetime, timedelta
@@ -183,7 +189,7 @@ class TurtleSoupMultiTFRule(RuleBase):
         for pool in pools_to_remove:
             del self.pool_usage_tracker[pool]
 
-    def __handle_upper_liquidity_raid(self, bars_slice: List[Bar], upper_liquidity_pools: List[float], current_date: str, bar: Bar) -> Optional[float]:
+    def __handle_upper_liquidity_raid(self, bars_slice: List[Bar], upper_liquidity_pools: List[tuple[float, int]], current_date: str, bar: Bar) -> Optional[tuple[float, int]]:
         """Check if any upper liquidity pool was raided in the given bars slice.
 
         A valid upper raid pattern is delegated to ``__check_upper_liquidity_raid``.
@@ -218,7 +224,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                 return pool
         return None
 
-    def __handle_lower_liquidity_raid(self, bars_slice: List[Bar], lower_liquidity_pools: List[float], current_date: str, new_bar: Bar) -> Optional[float]:
+    def __handle_lower_liquidity_raid(self, bars_slice: List[Bar], lower_liquidity_pools: List[tuple[float, int]], current_date: str, new_bar: Bar) -> Optional[tuple[float, int]]:
         """Check if any lower liquidity pool was raided in the given bars slice.
 
         A valid lower raid pattern is delegated to ``__check_lower_liquidity_raid``.
@@ -253,7 +259,7 @@ class TurtleSoupMultiTFRule(RuleBase):
         return None
 
     @staticmethod
-    def __check_upper_liquidity_raid(bars_slice: List[Bar], liquidity_pool: float) -> bool:
+    def __check_upper_liquidity_raid(bars_slice: List[Bar], liquidity_pool: tuple[float, int]) -> bool:
         """Detect an upper-liquidity raid pattern around the given level.
 
         Logic:
@@ -261,22 +267,24 @@ class TurtleSoupMultiTFRule(RuleBase):
         2) Then see a close above the level (raid).
         3) Finally, see an open back below the level (failure back-thru) -> confirm.
         """
+        price, ts_init = liquidity_pool
+
         most_recent_bar = bars_slice[0]
-        if most_recent_bar.close > liquidity_pool:
+        if most_recent_bar.close > price:
             return False
 
         seen_close_above = False
         for bar in bars_slice:
             if not seen_close_above:
-                if bar.close > liquidity_pool:
+                if bar.close > price:
                     seen_close_above = True
                 continue
-            if bar.open < liquidity_pool:
+            if bar.open < price:
                 return True
         return False
 
     @staticmethod
-    def __check_lower_liquidity_raid(bars_slice: List[Bar], liquidity_pool: float) -> bool:
+    def __check_lower_liquidity_raid(bars_slice: List[Bar], liquidity_pool: tuple[float, int]) -> bool:
         """Detect a lower-liquidity raid pattern around the given level.
 
         Logic:
@@ -284,17 +292,19 @@ class TurtleSoupMultiTFRule(RuleBase):
         2) Then see a close below the level (raid).
         3) Finally, see an open back above the level (failure back-thru) -> confirm.
         """
+        price, ts_init = liquidity_pool
+
         most_recent_bar = bars_slice[0]
-        if most_recent_bar.close < liquidity_pool:
+        if most_recent_bar.close < price:
             return False
 
         seen_close_below = False
         for bar in bars_slice:
             if not seen_close_below:
-                if bar.close < liquidity_pool:
+                if bar.close < price:
                     seen_close_below = True
                 continue
-            if bar.open > liquidity_pool:
+            if bar.open > price:
                 return True
         return False
 

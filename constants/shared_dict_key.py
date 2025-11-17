@@ -10,6 +10,8 @@ class SharedDictKey(StrEnum):
     TURTLE_SOUP_LATEST_UPPER_POOL_PRICE = "turtle_soup_latest_upper_pool_price"
     TURTLE_SOUP_LATEST_LOWER_POOL_PRICE = "turtle_soup_latest_lower_pool_price"
 
+    TURTLE_SOUP_USED_POOL = "turtle_soup_used_pool"
+
     EXPECTED_TARGET_LATEST_PIVOT_HIGH_PRICE = "expected_target_latest_pivot_high_price"
     EXPECTED_TARGET_LATEST_PIVOT_HIGH_TS = "expected_target_latest_pivot_high_ts"
     EXPECTED_TARGET_LATEST_PIVOT_LOW_PRICE = "expected_target_latest_pivot_low_price"

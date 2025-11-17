@@ -72,12 +72,12 @@ class SearchLiquidityPoolsRule(RuleBase):
         lower_period_bars = [bars[i] for i in range(len(lower_period_bars)) if i == 0 or self._has_sufficient_data(bars[i])]
 
         # Creating maps for upper and lower liquidity pools or getting them from the shared state
-        uppers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, {})
-        lowers_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS, {})
+        uppers_map: Dict[str, List[tuple[float, int]]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, {})
+        lowers_map: Dict[str, List[tuple[float, int]]] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS, {})
 
         # Extract highs for an upper window and lows for a lower window. Convert to float for consistency.
-        upper_highs = [float(b.high) for b in upper_period_bars if b is not None]
-        lower_lows = [float(b.low) for b in lower_period_bars if b is not None]
+        upper_highs = [(float(b.high), b.ts_init) for b in upper_period_bars if b is not None]
+        lower_lows = [(float(b.low), b.ts_init) for b in lower_period_bars if b is not None]
 
         # Saving the highs/lows for the selected bar type
         tf_key = str(self.config.bar_type.standard())
