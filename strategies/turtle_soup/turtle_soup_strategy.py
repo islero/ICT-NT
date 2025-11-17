@@ -24,6 +24,7 @@ class TurtleSoupStrategyConfig(StrategyConfig, frozen=True):
     liquidity_pool_lower_timeframe_bar_type: BarType
     liquidity_pool_time_delta: Timedelta
     liquidity_pool_min_lower_timeframe_count: int
+    liquidity_pool_extremums_count:int
     liquidity_pool_upper_period_window: int                # the upper period window | 3 on 1D TF means the last 3 daily bars highs inclusive
     liquidity_pool_lower_period_window: int                # the lower period window | 3 on 1D TF means the last 3 daily bars lows inclusive
 
@@ -71,7 +72,8 @@ class TurtleSoupStrategy(RuleBasedStrategy):
                                                                            config.liquidity_pool_lower_period_window,
                                                                            config.liquidity_pool_lower_timeframe_bar_type,
                                                                            config.liquidity_pool_time_delta,
-                                                                           config.liquidity_pool_min_lower_timeframe_count)
+                                                                           config.liquidity_pool_min_lower_timeframe_count,
+                                                                           config.liquidity_pool_extremums_count)
         search_liquidity_pool_rule = SearchLiquidityPoolsRule(self.shared_state, self, search_liquidity_pool_rule_config)
 
         #turtle_soup_rule_config = TurtleSoupRuleConfig(config.turtle_soup_bar_type, config.turtle_soup_bars_count)

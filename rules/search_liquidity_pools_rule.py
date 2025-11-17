@@ -20,6 +20,7 @@ class SearchLiquidityPoolsRuleConfig:
     lower_bar_type: BarType                 # lower timeframe bar type for data sufficiency check (e.g., 1h for daily, 1d for weekly)
     time_delta: Timedelta
     min_data_count: int = 3                 # minimum number of lower timeframe bars required
+    extremums_count: int = 1                # how many extremums to consider for the pool
 
 class SearchLiquidityPoolsRule(RuleBase):
     """
@@ -78,6 +79,10 @@ class SearchLiquidityPoolsRule(RuleBase):
         # Extract highs for an upper window and lows for a lower window. Convert to float for consistency.
         upper_highs = [(float(b.high), b.ts_init) for b in upper_period_bars if b is not None]
         lower_lows = [(float(b.low), b.ts_init) for b in lower_period_bars if b is not None]
+
+        # Keep only the top extremums_count maximums in upper_highs and minimums in lower_lows
+        upper_highs = sorted(upper_highs, key=lambda x: x[0], reverse=True)[:self.config.extremums_count]
+        lower_lows = sorted(lower_lows, key=lambda x: x[0])[:self.config.extremums_count]
 
         # Saving the highs/lows for the selected bar type
         tf_key = str(self.config.bar_type.standard())
