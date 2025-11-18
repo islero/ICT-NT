@@ -31,6 +31,7 @@ class TurtleSoupStrategyConfig(StrategyConfig, frozen=True):
     """Configuration for turtle soup rule."""
     turtle_soup_bar_type: BarType                         # target bar type to search the liquidity pools
     turtle_soup_analysis_chain_bar_type: List[BarType]    # target bar type to search the liquidity pools
+    turtle_soup_stop_loss_bar_type: BarType
     turtle_soup_bars_count: int                           # how many bars to consider when forming a turtle soup
     retries_count_on_stop_out: int                        # e.g., 2 - means 2 retries on the same day
 
@@ -81,6 +82,7 @@ class TurtleSoupStrategy(RuleBasedStrategy):
 
         turtle_soup_rule_config = TurtleSoupMultiTFRuleConfig(levels_sources=[config.liquidity_pool_bar_type],
                                                               analysis_chain=config.turtle_soup_analysis_chain_bar_type,
+                                                              stop_loss_bar_type=config.turtle_soup_stop_loss_bar_type,
                                                               turtle_bars_count=config.turtle_soup_bars_count,
                                                               retries_count_on_stop_out=config.retries_count_on_stop_out)
         turtle_soup_rule = TurtleSoupMultiTFRule(self.shared_state, self, turtle_soup_rule_config)
@@ -111,7 +113,7 @@ class TurtleSoupStrategy(RuleBasedStrategy):
 
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
-            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-08-25 05:00:00"))),
+            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-10-17 08:50:00"))),
             search_liquidity_pool_rule,
             sma_filter_rule,
             expected_target_rule,

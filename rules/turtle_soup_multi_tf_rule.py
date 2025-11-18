@@ -26,6 +26,7 @@ class TurtleSoupMultiTFRuleConfig:
     """
     levels_sources: List[BarType]      # e.g., [weekly, daily]
     analysis_chain: List[BarType]      # e.g., [daily, 4h, 1h, 15m, 5m, 1m]
+    stop_loss_bar_type: BarType        # e.g., 1h
     turtle_bars_count: int             # e.g., 4 means 4 bars are using to check the pattern
     retries_count_on_stop_out: int     # e.g., 2 - means 2 retries on the same day
 
@@ -217,10 +218,10 @@ class TurtleSoupMultiTFRule(RuleBase):
                 bars_slice_current_tf_highs = [float(b.high) for b in bars_slice if b is not None]
                 highest_high_current_tf_in_slice = max(bars_slice_current_tf_highs)
 
-                new_bar_bars = self.strategy.cache.bars(bar.bar_type.standard())
-                new_bar_slice = new_bar_bars[:self.config.turtle_bars_count]
-                new_bar_slice_highs = [float(b.high) for b in new_bar_slice if b is not None]
-                highest_high_new_bar_in_slice = max(new_bar_slice_highs)
+                sl_bars = self.strategy.cache.bars(self.config.stop_loss_bar_type.standard())
+                sl_bar_slice = sl_bars[:self.config.turtle_bars_count]
+                sl_bar_slice_highs = [float(b.high) for b in sl_bar_slice if b is not None]
+                highest_high_new_bar_in_slice = max(sl_bar_slice_highs)
 
                 self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(highest_high_current_tf_in_slice, highest_high_new_bar_in_slice))
                 return pool
@@ -251,10 +252,10 @@ class TurtleSoupMultiTFRule(RuleBase):
                 bars_slice_current_tf_lows = [float(b.low) for b in bars_slice if b is not None]
                 lowest_low_current_tf_in_slice = min(bars_slice_current_tf_lows)
 
-                new_bar_bars = self.strategy.cache.bars(new_bar.bar_type.standard())
-                new_bar_slice = new_bar_bars[:self.config.turtle_bars_count]
-                new_bar_slice_lows = [float(b.low) for b in new_bar_slice if b is not None]
-                lowest_low_new_bar_in_slice = min(new_bar_slice_lows)
+                sl_bars = self.strategy.cache.bars(self.config.stop_loss_bar_type.standard())
+                sl_bar_slice = sl_bars[:self.config.turtle_bars_count]
+                sl_bar_slice_lows = [float(b.low) for b in sl_bar_slice if b is not None]
+                lowest_low_new_bar_in_slice = min(sl_bar_slice_lows)
 
                 self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(lowest_low_current_tf_in_slice, lowest_low_new_bar_in_slice))
                 return pool
