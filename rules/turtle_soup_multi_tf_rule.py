@@ -23,12 +23,14 @@ class TurtleSoupMultiTFRuleConfig:
         turtle_bars_count: Number of most recent bars to consider when checking the
             Turtle Soup pattern.
         retries_count_on_stop_out: Number of retries on the same day only N position can be reopened if all conditions are met
+        sl_shift: Shift value to add/subtract from the stop loss level for buffer
     """
     levels_sources: List[BarType]      # e.g., [weekly, daily]
     analysis_chain: List[BarType]      # e.g., [daily, 4h, 1h, 15m, 5m, 1m]
     stop_loss_bar_type: BarType        # e.g., 1h
     turtle_bars_count: int             # e.g., 4 means 4 bars are using to check the pattern
     retries_count_on_stop_out: int     # e.g., 2 - means 2 retries on the same day
+    sl_shift: float                    # e.g., 0.0001 - adds buffer to stop loss
 
 class TurtleSoupMultiTFRule(RuleBase):
     """Multi-timeframe Turtle Soup rule.
@@ -151,8 +153,6 @@ class TurtleSoupMultiTFRule(RuleBase):
         if tracker['date'] == current_date and tracker.get('attempts', 0) >= self.config.retries_count_on_stop_out:
             return False
 
-        # TODO: implement liquidity_pool_reuse_rule functionality here
-
         return True
 
     def _mark_pool_usage(self, pool: tuple[float, int], current_date: str):
@@ -223,7 +223,8 @@ class TurtleSoupMultiTFRule(RuleBase):
                 sl_bar_slice_highs = [float(b.high) for b in sl_bar_slice if b is not None]
                 highest_high_new_bar_in_slice = max(sl_bar_slice_highs)
 
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, max(highest_high_current_tf_in_slice, highest_high_new_bar_in_slice))
+                stop_loss = max(highest_high_current_tf_in_slice, highest_high_new_bar_in_slice) + self.config.sl_shift
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, stop_loss)
                 return pool
         return None
 
@@ -257,7 +258,8 @@ class TurtleSoupMultiTFRule(RuleBase):
                 sl_bar_slice_lows = [float(b.low) for b in sl_bar_slice if b is not None]
                 lowest_low_new_bar_in_slice = min(sl_bar_slice_lows)
 
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, min(lowest_low_current_tf_in_slice, lowest_low_new_bar_in_slice))
+                stop_loss = min(lowest_low_current_tf_in_slice, lowest_low_new_bar_in_slice) - self.config.sl_shift
+                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, stop_loss)
                 return pool
         return None
 

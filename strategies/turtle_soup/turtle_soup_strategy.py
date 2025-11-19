@@ -34,6 +34,7 @@ class TurtleSoupStrategyConfig(StrategyConfig, frozen=True):
     turtle_soup_stop_loss_bar_type: BarType
     turtle_soup_bars_count: int                           # how many bars to consider when forming a turtle soup
     retries_count_on_stop_out: int                        # e.g., 2 - means 2 retries on the same day
+    sl_shift: float
 
     risk_reward_ratio: float                              # TP to SL ratio, which is actually R:R ratio
 
@@ -84,7 +85,8 @@ class TurtleSoupStrategy(RuleBasedStrategy):
                                                               analysis_chain=config.turtle_soup_analysis_chain_bar_type,
                                                               stop_loss_bar_type=config.turtle_soup_stop_loss_bar_type,
                                                               turtle_bars_count=config.turtle_soup_bars_count,
-                                                              retries_count_on_stop_out=config.retries_count_on_stop_out)
+                                                              retries_count_on_stop_out=config.retries_count_on_stop_out,
+                                                              sl_shift=config.sl_shift)
         turtle_soup_rule = TurtleSoupMultiTFRule(self.shared_state, self, turtle_soup_rule_config)
 
         sma_filter_rule_config = SMAFilterRuleConfig(config.sma_filter_bar_type, config.sma_filter_period)
