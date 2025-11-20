@@ -16,3 +16,6 @@ class SharedDictKey(StrEnum):
     EXPECTED_TARGET_LATEST_PIVOT_HIGH_TS = "expected_target_latest_pivot_high_ts"
     EXPECTED_TARGET_LATEST_PIVOT_LOW_PRICE = "expected_target_latest_pivot_low_price"
     EXPECTED_TARGET_LATEST_PIVOT_LOW_TS = "expected_target_latest_pivot_low_ts"
+
+    MARKET_STRUCTURE_TREND_DIRECTION = "market_structure_trend_direction"
+    MARKET_STRUCTURE_SHIFT = "market_structure_shift"
