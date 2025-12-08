@@ -18,4 +18,4 @@ class DebugRule(RuleBase):
             #time = pd.to_datetime(current_time_ns, unit="ns")
             return True
 
-        return True
+        return True # It's necessary to return True to allow the strategy to continue running

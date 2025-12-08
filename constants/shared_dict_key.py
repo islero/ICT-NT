@@ -19,3 +19,4 @@ class SharedDictKey(StrEnum):
 
     MARKET_STRUCTURE_TREND_DIRECTION = "market_structure_trend_direction"
     MARKET_STRUCTURE_SHIFT = "market_structure_shift"
+    MARKET_STRUCTURE_RULE_SIGNAL = "market_structure_rule_signal"
