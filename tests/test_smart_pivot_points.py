@@ -486,5 +486,117 @@ class TestSmartPivotPointsReset:
         assert indicator.is_new_major_low is False, "is_new_major_low should be False after reset"
 
 
+class TestSmartPivotPointsDeepPullbackBOS:
+    """Tests for deep pullback followed by break of structure continuation."""
+
+    def test_downtrend_deep_pullback_then_bos_continuation(self):
+        """
+        Verify downtrend behavior with deep pullback followed by BOS continuation.
+
+        Scenario:
+        1. Establish initial range
+        2. Break down to establish downtrend
+        3. Deep pullback (potential LH forming at 96)
+        4. Break of structure (close below major low) confirms LH and continues trend
+
+        Expected:
+        - Trend becomes -1 after initial break down
+        - Deep pullback does NOT flip trend to 1
+        - BOS continuation confirms new major high (the LH at 96)
+        - Major low updates to new low (75)
+        """
+        indicator = SmartPivotPoints()
+
+        prices = [
+            # Initialization phase
+            (100, 105, 95, 100),   # 0. Initial Range
+            (100, 102, 90, 92),    # 1. Drop, creates Low 90
+            (92, 95, 91, 93),      # 2. Inside bar
+            (93, 93, 80, 80),      # 3. BREAK DOWN (Close 80 < 90). Trend -> DOWN (-1)
+
+            # Deep Pullback Phase
+            (80, 85, 80, 85),      # 4. Pullback start
+            (85, 95, 85, 95),      # 5. Deep Pullback to 95. Candidate LH = 95
+            (95, 96, 94, 94),      # 6. Higher internal high (96). Candidate LH = 96
+            (94, 94, 88, 88),      # 7. Internal low
+            (88, 92, 88, 90),      # 8. Another lower high (92) internally
+
+            # Continuation / BOS
+            (90, 90, 75, 75),      # 9. CRASH to 75. Breaks Major Low (80)
+                                   #    EXPECTATION: Confirm 96 as New Major High (LH)
+                                   #    New Major Low = 75
+        ]
+
+        bars = _bars_from_ohlc(prices)
+        trends = _feed_bars(indicator, bars)
+
+        # After bar 3 (break down), trend should be -1
+        assert trends[3] == -1, f"Expected downtrend after bar 3, got {trends[3]}"
+
+        # During deep pullback (bars 4-8), trend should remain -1 (not flip to 1)
+        for i in range(4, 9):
+            assert trends[i] == -1, f"Deep pullback incorrectly flipped trend at bar {i}: {trends[i]}"
+
+        # Final trend after BOS should still be -1
+        assert indicator.trend == -1, f"Expected downtrend after BOS, got {indicator.trend}"
+
+        # Major low should be updated to 75 after the break
+        assert indicator.major_low == 75, f"Expected major_low=75 after BOS, got {indicator.major_low}"
+
+        # Major high should be set (the confirmed LH)
+        assert indicator.major_high is not None, "Major high should be set after LH confirmation"
+
+    def test_uptrend_deep_pullback_then_bos_continuation(self):
+        """
+        Verify uptrend behavior with deep pullback followed by BOS continuation.
+
+        Mirror of downtrend test:
+        1. Establish initial range
+        2. Break up to establish uptrend
+        3. Deep pullback (potential HL forming)
+        4. Break of structure (close above major high) confirms HL and continues trend
+        """
+        indicator = SmartPivotPoints()
+
+        prices = [
+            # Initialization phase
+            (100, 105, 95, 100),   # 0. Initial Range
+            (100, 110, 98, 108),   # 1. Push up, creates High 110
+            (108, 109, 105, 107),  # 2. Inside bar
+            (107, 120, 107, 120),  # 3. BREAK UP (Close 120 > 110). Trend -> UP (1)
+
+            # Deep Pullback Phase
+            (120, 120, 115, 115),  # 4. Pullback start
+            (115, 116, 105, 105),  # 5. Deep Pullback to 105. Candidate HL = 105
+            (105, 106, 104, 106),  # 6. Lower internal low (104). Candidate HL = 104
+            (106, 112, 106, 112),  # 7. Internal high
+            (112, 113, 108, 110),  # 8. Another higher low internally
+
+            # Continuation / BOS
+            (110, 125, 110, 125),  # 9. BREAKOUT to 125. Breaks Major High (120)
+                                   #    EXPECTATION: Confirm 104 as New Major Low (HL)
+                                   #    New Major High = 125
+        ]
+
+        bars = _bars_from_ohlc(prices)
+        trends = _feed_bars(indicator, bars)
+
+        # After bar 3 (break up), trend should be 1
+        assert trends[3] == 1, f"Expected uptrend after bar 3, got {trends[3]}"
+
+        # During deep pullback (bars 4-8), trend should remain 1 (not flip to -1)
+        for i in range(4, 9):
+            assert trends[i] == 1, f"Deep pullback incorrectly flipped trend at bar {i}: {trends[i]}"
+
+        # Final trend after BOS should still be 1
+        assert indicator.trend == 1, f"Expected uptrend after BOS, got {indicator.trend}"
+
+        # Major high should be updated to 125 after the break
+        assert indicator.major_high == 125, f"Expected major_high=125 after BOS, got {indicator.major_high}"
+
+        # Major low should be set (the confirmed HL)
+        assert indicator.major_low is not None, "Major low should be set after HL confirmation"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
