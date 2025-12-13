@@ -20,3 +20,15 @@ class SharedDictKey(StrEnum):
     MARKET_STRUCTURE_TREND_DIRECTION = "market_structure_trend_direction"
     MARKET_STRUCTURE_SHIFT = "market_structure_shift"
     MARKET_STRUCTURE_RULE_SIGNAL = "market_structure_rule_signal"
+
+    # Weekly Context Rule keys
+    WEEKLY_STRUCTURE = "weekly_structure"
+    WEEKLY_ZONE = "weekly_zone"
+    WEEKLY_BLOCK_LONGS = "weekly_block_longs"
+    WEEKLY_BLOCK_SHORTS = "weekly_block_shorts"
+    WEEKLY_RECOMMENDED_ENTRY_PRICE = "weekly_recommended_entry_price"
+    WEEKLY_DEALING_RANGE_HIGH = "weekly_dealing_range_high"
+    WEEKLY_DEALING_RANGE_LOW = "weekly_dealing_range_low"
+    WEEKLY_EQUILIBRIUM = "weekly_equilibrium"
+    WEEKLY_OTE_HIGH = "weekly_ote_high"
+    WEEKLY_OTE_LOW = "weekly_ote_low"
