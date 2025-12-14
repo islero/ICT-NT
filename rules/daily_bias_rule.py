@@ -565,8 +565,12 @@ class DailyBiasRule(RuleBase):
         If weekly blocks longs and daily is bullish -> conflict
         If weekly blocks shorts and daily is bearish -> conflict
         """
-        weekly_blocks_longs = self.shared_state.get(SharedDictKey.WEEKLY_BLOCK_LONGS, False)
-        weekly_blocks_shorts = self.shared_state.get(SharedDictKey.WEEKLY_BLOCK_SHORTS, False)
+        shared_state = self.shared_state
+        if shared_state is None:
+            return candidate_bias
+
+        weekly_blocks_longs = shared_state.get(SharedDictKey.WEEKLY_BLOCK_LONGS, False)
+        weekly_blocks_shorts = shared_state.get(SharedDictKey.WEEKLY_BLOCK_SHORTS, False)
 
         if weekly_blocks_longs:
             self._reason_codes.append(ReasonCode.WEEKLY_BLOCKS_LONGS)
@@ -657,6 +661,8 @@ class DailyBiasRule(RuleBase):
 
     def _save_to_shared_state(self) -> None:
         """Save all computed values to shared state."""
+        if self.shared_state is None:
+            return
         self.shared_state.set(SharedDictKey.DAILY_BIAS, self._daily_bias.value)
         self.shared_state.set(SharedDictKey.DAILY_STRUCTURE, self._daily_structure.value)
         self.shared_state.set(SharedDictKey.DAILY_ZONE, self._daily_zone.value)
