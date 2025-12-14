@@ -14,6 +14,7 @@ import sys
 import os
 from unittest.mock import MagicMock
 from abc import ABC, abstractmethod
+from typing import Sequence
 
 import pytest
 
@@ -95,7 +96,7 @@ class MockBar:
         self.bar_type = MagicMock()
 
 
-def _bars_from_ohlc(series: list[tuple[float, float, float, float]]) -> list[MockBar]:
+def _bars_from_ohlc(series: Sequence[tuple[float, float, float, float]]) -> list[MockBar]:
     """Build bars from a list of (open, high, low, close) tuples."""
     bars = []
     for i, (o, h, l, c) in enumerate(series):
@@ -253,6 +254,8 @@ class WeeklyContextRule(MockRuleBase):
                 self._block_longs = True
 
     def _save_to_shared_state(self) -> None:
+        if self.shared_state is None:
+            return
         self.shared_state.set(SharedDictKey.WEEKLY_STRUCTURE, self._weekly_structure.value)
         self.shared_state.set(SharedDictKey.WEEKLY_ZONE, self._weekly_zone.value)
         self.shared_state.set(SharedDictKey.WEEKLY_BLOCK_LONGS, self._block_longs)
@@ -758,7 +761,10 @@ class TestWeeklyContextRuleDealingRange:
             rule.evaluate(bar)
 
         # Equilibrium should be midpoint
+        assert rule.dealing_range_high is not None
+        assert rule.dealing_range_low is not None
         expected_equilibrium = (rule.dealing_range_high + rule.dealing_range_low) / 2
+        assert rule.equilibrium is not None
         assert abs(rule.equilibrium - expected_equilibrium) < 0.01
 
 

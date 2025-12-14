@@ -273,6 +273,7 @@ class TestFibonacciLevelsOTE:
 
         # Recommended entry at 70.5%
         expected_705 = 200.0 - (100.0 * 0.705)  # 129.5
+        assert fib.recommended_entry is not None
         assert abs(fib.recommended_entry - expected_705) < 0.01
 
     def test_sell_direction_ote_zone(self):
@@ -294,6 +295,7 @@ class TestFibonacciLevelsOTE:
 
         # Recommended entry at 70.5%
         expected_705 = 100.0 + (100.0 * 0.705)  # 170.5
+        assert fib.recommended_entry is not None
         assert abs(fib.recommended_entry - expected_705) < 0.01
 
     def test_is_in_optimal_entry_zone(self):

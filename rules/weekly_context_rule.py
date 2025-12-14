@@ -317,6 +317,8 @@ class WeeklyContextRule(RuleBase):
 
     def _save_to_shared_state(self) -> None:
         """Save all computed values to shared state."""
+        if self.shared_state is None:
+            return
         self.shared_state.set(SharedDictKey.WEEKLY_STRUCTURE, self._weekly_structure.value)
         self.shared_state.set(SharedDictKey.WEEKLY_ZONE, self._weekly_zone.value)
         self.shared_state.set(SharedDictKey.WEEKLY_BLOCK_LONGS, self._block_longs)
