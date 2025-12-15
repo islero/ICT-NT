@@ -136,6 +136,10 @@ class FibonacciLevels(Indicator):
             swing_high: Upper price of the dealing range
             direction: Trade direction (BUY/SELL)
         """
+        # Convert to float to handle decimal.Decimal from nautilus_trader
+        swing_low = float(swing_low)
+        swing_high = float(swing_high)
+
         if swing_low >= swing_high:
             self._is_valid = False
             return

@@ -4,12 +4,16 @@ from nautilus_trader.trading.config import StrategyConfig
 from core.rules import RuleBase
 from core.strategies import RuleBasedStrategy
 from rules.market_structure_rule import MarketStructureRule, MarketStructureRuleConfig
+from rules.weekly_context_rule import WeeklyContextRule, WeeklyContextRuleConfig
+from rules.daily_bias_rule import DailyBiasRule, DailyBiasRuleConfig
 
 
 class ICTStrategyConfig(StrategyConfig, frozen=True):
     """Configuration for ICT strategy."""
     instrument_id: InstrumentId
     base_bar_type: BarType
+    weekly_bar_type: BarType | None = None
+    daily_bar_type: BarType | None = None
     is_backtest: bool = True
 
 
@@ -22,6 +26,22 @@ class ICTStrategy(RuleBasedStrategy):
 
         # initialize rules
         self._rules = [
+            WeeklyContextRule(
+                shared_state=self.shared_state,
+                strategy=self,
+                config=WeeklyContextRuleConfig(
+                    bar_type=config.weekly_bar_type,
+                    base_bar_type=config.base_bar_type
+                )
+            ),
+            DailyBiasRule(
+                shared_state=self.shared_state,
+                strategy=self,
+                config=DailyBiasRuleConfig(
+                    bar_type=config.daily_bar_type,
+                    base_bar_type=config.base_bar_type
+                )
+            ),
             MarketStructureRule(
                 shared_state=self.shared_state,
                 strategy=self,
