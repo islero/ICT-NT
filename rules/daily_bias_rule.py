@@ -57,7 +57,7 @@ from nautilus_trader.trading import Strategy
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.rules.rule_base import RuleBase
-from indicators.smart_pivot_points import SmartPivotPoints
+from indicators.smart_pivot_points import SmartPivotPoints, Trend
 from indicators.fibonacci_levels import FibonacciLevels, TradeDirection, PriceZone
 from indicators.fair_value_gap import FairValueGap, FvgDirection
 
@@ -325,10 +325,10 @@ class DailyBiasRule(RuleBase):
         """Update daily structure based on SmartPivotPoints trend."""
         trend = self.smart_pivot_points.trend
 
-        if trend == 1:
+        if trend == Trend.UP:
             self._daily_structure = DailyStructure.BULLISH
             self._reason_codes.append(ReasonCode.STRUCT_BULL)
-        elif trend == -1:
+        elif trend == Trend.DOWN:
             self._daily_structure = DailyStructure.BEARISH
             self._reason_codes.append(ReasonCode.STRUCT_BEAR)
         else:
@@ -772,8 +772,8 @@ class DailyBiasRule(RuleBase):
         return self._last_fvg_direction
 
     @property
-    def trend(self) -> int:
-        """Raw trend from SmartPivotPoints (1=up, -1=down, 0=undefined)."""
+    def trend(self) -> Trend:
+        """Raw trend from SmartPivotPoints."""
         return self.smart_pivot_points.trend
 
     @property

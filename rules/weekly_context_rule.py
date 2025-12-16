@@ -40,7 +40,7 @@ from nautilus_trader.trading import Strategy
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.rules.rule_base import RuleBase
-from indicators.smart_pivot_points import SmartPivotPoints
+from indicators.smart_pivot_points import SmartPivotPoints, Trend
 from indicators.fibonacci_levels import FibonacciLevels, TradeDirection, PriceZone
 
 
@@ -202,10 +202,10 @@ class WeeklyContextRule(RuleBase):
         """Update Weekly structure based on SmartPivotPoints trend."""
         trend = self.smart_pivot_points.trend
 
-        if trend == 1:
+        if trend == Trend.UP:
             # Uptrend: HH -> HL -> HH structure = Bullish
             self._weekly_structure = WeeklyStructure.BULLISH
-        elif trend == -1:
+        elif trend == Trend.DOWN:
             # Downtrend: LL -> LH -> LL structure = Bearish
             self._weekly_structure = WeeklyStructure.BEARISH
         else:
@@ -405,8 +405,8 @@ class WeeklyContextRule(RuleBase):
         return self._ote_low
 
     @property
-    def trend(self) -> int:
-        """Raw trend from SmartPivotPoints (1=up, -1=down, 0=undefined)."""
+    def trend(self) -> Trend:
+        """Raw trend from SmartPivotPoints."""
         return self.smart_pivot_points.trend
 
     def is_favorable_for_longs(self, price: Optional[float] = None) -> bool:

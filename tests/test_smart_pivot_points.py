@@ -40,7 +40,7 @@ sys.modules["nautilus_trader.model.data"].Bar = MagicMock()
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Now we can import the indicator under test
-from indicators.smart_pivot_points import SmartPivotPoints
+from indicators.smart_pivot_points import SmartPivotPoints, Trend
 
 
 # Mock Bar object for our use
@@ -150,17 +150,17 @@ class TestSmartPivotPointsUptrend:
         bars = _bars_from_ohlc(prices)
         trends = _feed_bars(indicator, bars)
 
-        # Final trend should be 1 (uptrend)
-        assert indicator.trend == 1, f"Expected uptrend (1), got {indicator.trend}"
+        # Final trend should be Trend.UP (uptrend)
+        assert indicator.trend == Trend.UP, f"Expected uptrend (Trend.UP), got {indicator.trend}"
 
-        # After uptrend is established, it should remain 1
-        # Find first index where trend becomes 1
-        first_uptrend_idx = next((i for i, t in enumerate(trends) if t == 1), None)
+        # After uptrend is established, it should remain Trend.UP
+        # Find first index where trend becomes Trend.UP
+        first_uptrend_idx = next((i for i, t in enumerate(trends) if t == Trend.UP), None)
         assert first_uptrend_idx is not None, "Uptrend was never established"
 
-        # Check trend stays 1 after establishment (no flip to -1)
+        # Check trend stays Trend.UP after establishment (no flip to Trend.DOWN)
         for i in range(first_uptrend_idx, len(trends)):
-            assert trends[i] == 1, f"Trend flipped from 1 at bar {i}: {trends[i]}"
+            assert trends[i] == Trend.UP, f"Trend flipped from Trend.UP at bar {i}: {trends[i]}"
 
 
 class TestSmartPivotPointsDowntrend:
@@ -193,16 +193,16 @@ class TestSmartPivotPointsDowntrend:
         bars = _bars_from_ohlc(prices)
         trends = _feed_bars(indicator, bars)
 
-        # Final trend should be -1 (downtrend)
-        assert indicator.trend == -1, f"Expected downtrend (-1), got {indicator.trend}"
+        # Final trend should be Trend.DOWN (downtrend)
+        assert indicator.trend == Trend.DOWN, f"Expected downtrend (Trend.DOWN), got {indicator.trend}"
 
-        # After downtrend is established, it should remain -1
-        first_downtrend_idx = next((i for i, t in enumerate(trends) if t == -1), None)
+        # After downtrend is established, it should remain Trend.DOWN
+        first_downtrend_idx = next((i for i, t in enumerate(trends) if t == Trend.DOWN), None)
         assert first_downtrend_idx is not None, "Downtrend was never established"
 
-        # Check trend stays -1 after establishment (no flip to 1)
+        # Check trend stays Trend.DOWN after establishment (no flip to Trend.UP)
         for i in range(first_downtrend_idx, len(trends)):
-            assert trends[i] == -1, f"Trend flipped from -1 at bar {i}: {trends[i]}"
+            assert trends[i] == Trend.DOWN, f"Trend flipped from Trend.DOWN at bar {i}: {trends[i]}"
 
 
 class TestSmartPivotPointsHLStability:
@@ -239,16 +239,16 @@ class TestSmartPivotPointsHLStability:
         bars = _bars_from_ohlc(all_prices)
         trends = _feed_bars(indicator, bars)
 
-        # After uptrend established, trend should never flip to -1
-        first_uptrend_idx = next((i for i, t in enumerate(trends) if t == 1), None)
+        # After uptrend established, trend should never flip to Trend.DOWN
+        first_uptrend_idx = next((i for i, t in enumerate(trends) if t == Trend.UP), None)
         assert first_uptrend_idx is not None, "Uptrend was never established"
 
-        # Verify no -1 appears after uptrend is established
+        # Verify no Trend.DOWN appears after uptrend is established
         for i in range(first_uptrend_idx, len(trends)):
-            assert trends[i] != -1, f"HL pullback incorrectly flipped trend to -1 at bar {i}"
+            assert trends[i] != Trend.DOWN, f"HL pullback incorrectly flipped trend to Trend.DOWN at bar {i}"
 
-        # Final trend should still be 1
-        assert indicator.trend == 1, f"Expected trend=1 after HL pullback, got {indicator.trend}"
+        # Final trend should still be Trend.UP
+        assert indicator.trend == Trend.UP, f"Expected trend=Trend.UP after HL pullback, got {indicator.trend}"
 
 
 class TestSmartPivotPointsLHStability:
@@ -285,16 +285,16 @@ class TestSmartPivotPointsLHStability:
         bars = _bars_from_ohlc(all_prices)
         trends = _feed_bars(indicator, bars)
 
-        # After downtrend established, trend should never flip to 1
-        first_downtrend_idx = next((i for i, t in enumerate(trends) if t == -1), None)
+        # After downtrend established, trend should never flip to Trend.UP
+        first_downtrend_idx = next((i for i, t in enumerate(trends) if t == Trend.DOWN), None)
         assert first_downtrend_idx is not None, "Downtrend was never established"
 
-        # Verify no 1 appears after downtrend is established
+        # Verify no Trend.UP appears after downtrend is established
         for i in range(first_downtrend_idx, len(trends)):
-            assert trends[i] != 1, f"LH bounce incorrectly flipped trend to 1 at bar {i}"
+            assert trends[i] != Trend.UP, f"LH bounce incorrectly flipped trend to Trend.UP at bar {i}"
 
-        # Final trend should still be -1
-        assert indicator.trend == -1, f"Expected trend=-1 after LH bounce, got {indicator.trend}"
+        # Final trend should still be Trend.DOWN
+        assert indicator.trend == Trend.DOWN, f"Expected trend=Trend.DOWN after LH bounce, got {indicator.trend}"
 
 
 class TestSmartPivotPointsFalseReversals:
@@ -328,14 +328,14 @@ class TestSmartPivotPointsFalseReversals:
         bars = _bars_from_ohlc(all_prices)
         trends = _feed_bars(indicator, bars)
 
-        # After uptrend established, no -1 should appear (pullback shouldn't flip)
-        first_uptrend_idx = next((i for i, t in enumerate(trends) if t == 1), None)
+        # After uptrend established, no Trend.DOWN should appear (pullback shouldn't flip)
+        first_uptrend_idx = next((i for i, t in enumerate(trends) if t == Trend.UP), None)
         assert first_uptrend_idx is not None, "Uptrend was never established"
 
         for i in range(first_uptrend_idx, len(trends)):
-            assert trends[i] != -1, f"Normal pullback incorrectly flipped to downtrend at bar {i}"
+            assert trends[i] != Trend.DOWN, f"Normal pullback incorrectly flipped to downtrend at bar {i}"
 
-        assert indicator.trend == 1, "Final trend should remain uptrend (1)"
+        assert indicator.trend == Trend.UP, "Final trend should remain uptrend (Trend.UP)"
 
     def test_normal_bounce_in_downtrend_no_flip(self):
         """
@@ -365,14 +365,14 @@ class TestSmartPivotPointsFalseReversals:
         bars = _bars_from_ohlc(all_prices)
         trends = _feed_bars(indicator, bars)
 
-        # After downtrend established, no 1 should appear (bounce shouldn't flip)
-        first_downtrend_idx = next((i for i, t in enumerate(trends) if t == -1), None)
+        # After downtrend established, no Trend.UP should appear (bounce shouldn't flip)
+        first_downtrend_idx = next((i for i, t in enumerate(trends) if t == Trend.DOWN), None)
         assert first_downtrend_idx is not None, "Downtrend was never established"
 
         for i in range(first_downtrend_idx, len(trends)):
-            assert trends[i] != 1, f"Normal bounce incorrectly flipped to uptrend at bar {i}"
+            assert trends[i] != Trend.UP, f"Normal bounce incorrectly flipped to uptrend at bar {i}"
 
-        assert indicator.trend == -1, "Final trend should remain downtrend (-1)"
+        assert indicator.trend == Trend.DOWN, "Final trend should remain downtrend (Trend.DOWN)"
 
 
 class TestSmartPivotPointsMajorStructure:
@@ -391,7 +391,7 @@ class TestSmartPivotPointsMajorStructure:
         bars = _bars_from_ohlc(prices)
         _feed_bars(indicator, bars)
 
-        assert indicator.trend == -1, "Should be in downtrend"
+        assert indicator.trend == Trend.DOWN, "Should be in downtrend"
         assert indicator.major_high is not None, "Major high should be set"
 
     def test_major_low_updated_on_break_of_structure(self):
@@ -407,7 +407,7 @@ class TestSmartPivotPointsMajorStructure:
         bars = _bars_from_ohlc(prices)
         _feed_bars(indicator, bars)
 
-        assert indicator.trend == 1, "Should be in uptrend"
+        assert indicator.trend == Trend.UP, "Should be in uptrend"
         assert indicator.major_low is not None, "Major low should be set"
 
 
@@ -435,7 +435,7 @@ class TestSmartPivotPointsSignals:
 
         # The signal should have been True on the confirmation bar
         # Note: Signal is reset each bar, so we check the bar that triggers it
-        assert indicator.trend == -1, "Should be in downtrend"
+        assert indicator.trend == Trend.DOWN, "Should be in downtrend"
 
     def test_is_new_major_low_signal(self):
         """Verify is_new_major_low is True when new HL is confirmed in uptrend."""
@@ -457,7 +457,7 @@ class TestSmartPivotPointsSignals:
         indicator.handle_bar(bars[2])
 
         # The signal should have been True on the confirmation bar
-        assert indicator.trend == 1, "Should be in uptrend"
+        assert indicator.trend == Trend.UP, "Should be in uptrend"
 
 
 class TestSmartPivotPointsReset:
@@ -479,7 +479,7 @@ class TestSmartPivotPointsReset:
         indicator.reset()
 
         # Verify cleared
-        assert indicator.trend == 0, "Trend should be 0 after reset"
+        assert indicator.trend == Trend.UNDEFINED, "Trend should be Trend.UNDEFINED after reset"
         assert indicator.major_high is None, "major_high should be None after reset"
         assert indicator.major_low is None, "major_low should be None after reset"
         assert indicator.is_new_major_high is False, "is_new_major_high should be False after reset"
@@ -530,15 +530,15 @@ class TestSmartPivotPointsDeepPullbackBOS:
         bars = _bars_from_ohlc(prices)
         trends = _feed_bars(indicator, bars)
 
-        # After bar 3 (break down), trend should be -1
-        assert trends[3] == -1, f"Expected downtrend after bar 3, got {trends[3]}"
+        # After bar 3 (break down), trend should be Trend.DOWN
+        assert trends[3] == Trend.DOWN, f"Expected downtrend after bar 3, got {trends[3]}"
 
-        # During deep pullback (bars 4-8), trend should remain -1 (not flip to 1)
+        # During deep pullback (bars 4-8), trend should remain Trend.DOWN (not flip to Trend.UP)
         for i in range(4, 9):
-            assert trends[i] == -1, f"Deep pullback incorrectly flipped trend at bar {i}: {trends[i]}"
+            assert trends[i] == Trend.DOWN, f"Deep pullback incorrectly flipped trend at bar {i}: {trends[i]}"
 
-        # Final trend after BOS should still be -1
-        assert indicator.trend == -1, f"Expected downtrend after BOS, got {indicator.trend}"
+        # Final trend after BOS should still be Trend.DOWN
+        assert indicator.trend == Trend.DOWN, f"Expected downtrend after BOS, got {indicator.trend}"
 
         # Major low should be updated to 75 after the break
         assert indicator.major_low == 75, f"Expected major_low=75 after BOS, got {indicator.major_low}"
@@ -581,15 +581,15 @@ class TestSmartPivotPointsDeepPullbackBOS:
         bars = _bars_from_ohlc(prices)
         trends = _feed_bars(indicator, bars)
 
-        # After bar 3 (break up), trend should be 1
-        assert trends[3] == 1, f"Expected uptrend after bar 3, got {trends[3]}"
+        # After bar 3 (break up), trend should be Trend.UP
+        assert trends[3] == Trend.UP, f"Expected uptrend after bar 3, got {trends[3]}"
 
-        # During deep pullback (bars 4-8), trend should remain 1 (not flip to -1)
+        # During deep pullback (bars 4-8), trend should remain Trend.UP (not flip to Trend.DOWN)
         for i in range(4, 9):
-            assert trends[i] == 1, f"Deep pullback incorrectly flipped trend at bar {i}: {trends[i]}"
+            assert trends[i] == Trend.UP, f"Deep pullback incorrectly flipped trend at bar {i}: {trends[i]}"
 
-        # Final trend after BOS should still be 1
-        assert indicator.trend == 1, f"Expected uptrend after BOS, got {indicator.trend}"
+        # Final trend after BOS should still be Trend.UP
+        assert indicator.trend == Trend.UP, f"Expected uptrend after BOS, got {indicator.trend}"
 
         # Major high should be updated to 125 after the break
         assert indicator.major_high == 125, f"Expected major_high=125 after BOS, got {indicator.major_high}"

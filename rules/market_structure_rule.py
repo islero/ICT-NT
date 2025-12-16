@@ -8,7 +8,7 @@ from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.enums import RuleSignal
 from core.rules.rule_base import RuleBase
-from indicators.smart_pivot_points import SmartPivotPoints
+from indicators.smart_pivot_points import SmartPivotPoints, Trend
 
 
 @dataclass
@@ -55,7 +55,7 @@ class MarketStructureRule(RuleBase):
         self.first_bar_initialized = False
 
     @property
-    def trend(self) -> int:
+    def trend(self) -> Trend:
         """Returns the current trend from the SmartPivotPoints indicator."""
         return self.smart_pivot_points.trend
 
@@ -86,10 +86,10 @@ class MarketStructureRule(RuleBase):
         # Determine the signal based on trend direction
         trend = self.smart_pivot_points.trend
 
-        if trend == 1:
+        if trend == Trend.UP:
             # Uptrend: HH -> HL -> HH structure
             signal = RuleSignal.BUY
-        elif trend == -1:
+        elif trend == Trend.DOWN:
             # Downtrend: LL -> LH -> LL structure
             signal = RuleSignal.SELL
         else:

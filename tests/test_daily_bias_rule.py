@@ -49,7 +49,7 @@ from core import SharedState
 from constants.shared_dict_key import SharedDictKey
 
 # Import indicators
-from indicators.smart_pivot_points import SmartPivotPoints
+from indicators.smart_pivot_points import SmartPivotPoints, Trend
 from indicators.fibonacci_levels import FibonacciLevels, TradeDirection, PriceZone
 from indicators.fair_value_gap import FairValueGap, FvgDirection
 
@@ -257,10 +257,10 @@ class DailyBiasRule(MockRuleBase):
 
     def _update_daily_structure(self) -> None:
         trend = self.smart_pivot_points.trend
-        if trend == 1:
+        if trend == Trend.UP:
             self._daily_structure = DailyStructure.BULLISH
             self._reason_codes.append(ReasonCode.STRUCT_BULL)
-        elif trend == -1:
+        elif trend == Trend.DOWN:
             self._daily_structure = DailyStructure.BEARISH
             self._reason_codes.append(ReasonCode.STRUCT_BEAR)
         else:
@@ -536,7 +536,7 @@ class DailyBiasRule(MockRuleBase):
         return self._equilibrium
 
     @property
-    def trend(self) -> int:
+    def trend(self) -> Trend:
         return self.smart_pivot_points.trend
 
 
@@ -569,7 +569,7 @@ class TestDailyBiasRuleStructureClassification:
             rule.evaluate(bar)
 
         assert rule.daily_structure == DailyStructure.BULLISH
-        assert rule.trend == 1
+        assert rule.trend == Trend.UP
         assert shared_state.get(SharedDictKey.DAILY_STRUCTURE) == "bullish"
 
     def test_bearish_structure_when_trend_is_down(self):
@@ -594,7 +594,7 @@ class TestDailyBiasRuleStructureClassification:
             rule.evaluate(bar)
 
         assert rule.daily_structure == DailyStructure.BEARISH
-        assert rule.trend == -1
+        assert rule.trend == Trend.DOWN
         assert shared_state.get(SharedDictKey.DAILY_STRUCTURE) == "bearish"
 
     def test_neutral_structure_when_trend_is_undefined(self):
@@ -613,7 +613,7 @@ class TestDailyBiasRuleStructureClassification:
             rule.evaluate(bar)
 
         assert rule.daily_structure == DailyStructure.NEUTRAL
-        assert rule.trend == 0
+        assert rule.trend == Trend.UNDEFINED
         assert shared_state.get(SharedDictKey.DAILY_STRUCTURE) == "neutral"
 
 

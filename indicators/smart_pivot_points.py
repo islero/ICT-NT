@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+from enum import Enum
 from typing import Optional
 
 from nautilus_trader.indicators.base import Indicator
 from nautilus_trader.model.data import Bar
+
+
+class Trend(Enum):
+    """Market trend direction."""
+    UNDEFINED = 0
+    UP = 1
+    DOWN = -1
 
 
 class SmartPivotPoints(Indicator):
@@ -17,7 +25,7 @@ class SmartPivotPoints(Indicator):
     - This effectively filters out complex pullbacks that do not change the major trend.
 
     Attributes:
-        trend (int): 1 for Uptrend, -1 for Downtrend, 0 for Undefined.
+        trend (Trend): Trend.UP for Uptrend, Trend.DOWN for Downtrend, Trend.UNDEFINED for Undefined.
         major_high (float): Price of the active Major High.
         major_low (float): Price of the active Major Low.
     """
@@ -26,7 +34,7 @@ class SmartPivotPoints(Indicator):
         super().__init__([])  # No specific params for now, strictly structure based
 
         # State
-        self._trend: int = 0  # 0: Undefined, 1: Up, -1: Down
+        self._trend: Trend = Trend.UNDEFINED
 
         # Major Structure (The "Range" we are trading in)
         self._major_high: Optional[float] = None
@@ -48,14 +56,14 @@ class SmartPivotPoints(Indicator):
         self._new_major_high = False
         self._new_major_low = False
 
-        if self._trend == 0:
+        if self._trend == Trend.UNDEFINED:
             self._initialize_trend(bar)
             return
 
         # ---------------------------------------------------------------------
         # DOWNTREND LOGIC
         # ---------------------------------------------------------------------
-        if self._trend == -1:
+        if self._trend == Trend.DOWN:
             # 1. Update Candidate Low (The lowest point of the current move)
             if self._major_low is None or bar.low < self._major_low:
                  # We are making new lows (continuation), so the BOS point moves down
@@ -105,12 +113,12 @@ class SmartPivotPoints(Indicator):
         
         # If we break out of initial range, start trend
         if bar.close > self._major_high:
-            self._trend = 1
+            self._trend = Trend.UP
             self._major_low = self._candidate_low # This becomes the HL
             self._major_high = bar.high # Current high
             self._new_major_low = True # We confirmed a low by breaking high
         elif bar.close < self._major_low:
-            self._trend = -1
+            self._trend = Trend.DOWN
             self._major_high = self._candidate_high # This becomes the LH
             self._major_low = bar.low # Current low
             self._new_major_high = True # We confirmed a high by breaking low
@@ -129,17 +137,17 @@ class SmartPivotPoints(Indicator):
         self._new_major_high = False
         self._new_major_low = False
 
-        if self._trend == 0:
+        if self._trend == Trend.UNDEFINED:
             self._initialize_trend(bar)
             return
 
-        if self._trend == -1: # DOWNTREND
+        if self._trend == Trend.DOWN: # DOWNTREND
             # Logic: We have a confirmed MAJOR HIGH (LH) and a provisional MAJOR LOW (LL).
             
             # 1. Check for Reversal (Model: Close > Major High)
             if bar.close > self._major_high:
                 # TREND CHANGE TO UP
-                self._trend = 1
+                self._trend = Trend.UP
                 # The lowest point we ever reached is the Major Low
                 # The current move up is establishing a new Major High
                 self._major_low = self._candidate_low # Finalize the LL
@@ -203,20 +211,20 @@ class SmartPivotPoints(Indicator):
             self._candidate_low = bar.low
             return
 
-        if self._trend == 0:
+        if self._trend == Trend.UNDEFINED:
             # Initialization phase
             if bar.close > self._major_high:
-                self._trend = 1 # UP
+                self._trend = Trend.UP
                 # The low during this range is the first HL
-                self._major_low = self._candidate_low 
+                self._major_low = self._candidate_low
                 self._new_major_low = True
-                
+
                 # Current bar sets the new working High
-                self._major_high = bar.high 
+                self._major_high = bar.high
                 self._candidate_low = bar.low # Reset pullback tracker
 
             elif bar.close < self._major_low:
-                self._trend = -1 # DOWN
+                self._trend = Trend.DOWN
                 # The high during this range is the first LH
                 self._major_high = self._candidate_high
                 self._new_major_high = True
@@ -246,10 +254,10 @@ class SmartPivotPoints(Indicator):
         # ---------------------------------------------------------------------
         # DOWNTREND (Trend = -1)
         # ---------------------------------------------------------------------
-        if self._trend == -1:
+        if self._trend == Trend.DOWN:
             # 1. Check for Reversal (Break of Major LH)
             if bar.close > self._major_high:
-                self._trend = 1
+                self._trend = Trend.UP
                 # The lowest point found during the downtrend becomes the Major Low (Higher Low base)
                 # Actually, the lowest point was `major_low` (working variable). 
                 # CONFIRM IT.
@@ -300,10 +308,10 @@ class SmartPivotPoints(Indicator):
         # ---------------------------------------------------------------------
         # UPTREND (Trend = 1)
         # ---------------------------------------------------------------------
-        elif self._trend == 1:
+        elif self._trend == Trend.UP:
             # 1. Check for Reversal (Break of Major HL)
             if bar.close < self._major_low:
-                self._trend = -1
+                self._trend = Trend.DOWN
                 # The highest point found becomes Major High (Lower High base)
                 self._new_major_high = True # Confirmed the top
                 
@@ -342,7 +350,7 @@ class SmartPivotPoints(Indicator):
 
     def reset(self) -> None:
         super().reset()
-        self._trend = 0
+        self._trend = Trend.UNDEFINED
         self._major_high = None
         self._major_low = None
         self._candidate_high = None
@@ -351,7 +359,7 @@ class SmartPivotPoints(Indicator):
         self._new_major_low = False
 
     @property
-    def trend(self) -> int:
+    def trend(self) -> Trend:
         return self._trend
 
     @property

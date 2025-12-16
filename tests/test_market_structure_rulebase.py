@@ -58,7 +58,7 @@ sys.modules["nautilus_trader.indicators.base"].Indicator = MockIndicator
 sys.modules["nautilus_trader.model.data"].Bar = MagicMock()
 
 # Import SmartPivotPoints (this works since indicator is implemented)
-from indicators.smart_pivot_points import SmartPivotPoints
+from indicators.smart_pivot_points import SmartPivotPoints, Trend
 
 # Import SharedState and RuleSignal before mocking core.rules
 from core import SharedState
@@ -152,7 +152,7 @@ class MarketStructureRule(MockRuleBase):
         self.first_bar_initialized = False
 
     @property
-    def trend(self) -> int:
+    def trend(self) -> Trend:
         """Returns the current trend from the SmartPivotPoints indicator."""
         return self.smart_pivot_points.trend
 
@@ -170,9 +170,9 @@ class MarketStructureRule(MockRuleBase):
 
         trend = self.smart_pivot_points.trend
 
-        if trend == 1:
+        if trend == Trend.UP:
             signal = RuleSignal.BUY
-        elif trend == -1:
+        elif trend == Trend.DOWN:
             signal = RuleSignal.SELL
         else:
             signal = RuleSignal.NONE
@@ -219,11 +219,11 @@ class TestMarketStructureRuleUptrend:
             rule.evaluate(bar)
 
         # Check rule's trend property
-        assert rule.trend == 1, f"Expected uptrend (trend=1), got {rule.trend}"
+        assert rule.trend == Trend.UP, f"Expected uptrend (Trend.UP), got {rule.trend}"
 
         # Check via rule's internal indicator
-        assert rule.smart_pivot_points.trend == 1, \
-            f"Expected uptrend (trend=1), got {rule.smart_pivot_points.trend}"
+        assert rule.smart_pivot_points.trend == Trend.UP, \
+            f"Expected uptrend (Trend.UP), got {rule.smart_pivot_points.trend}"
 
     def test_uptrend_returns_buy_signal(self):
         """Verify uptrend returns RuleSignal.BUY via shared state."""
@@ -291,11 +291,11 @@ class TestMarketStructureRuleDowntrend:
             rule.evaluate(bar)
 
         # Check rule's trend property
-        assert rule.trend == -1, f"Expected downtrend (trend=-1), got {rule.trend}"
+        assert rule.trend == Trend.DOWN, f"Expected downtrend (Trend.DOWN), got {rule.trend}"
 
         # Check via rule's internal indicator
-        assert rule.smart_pivot_points.trend == -1, \
-            f"Expected downtrend (trend=-1), got {rule.smart_pivot_points.trend}"
+        assert rule.smart_pivot_points.trend == Trend.DOWN, \
+            f"Expected downtrend (Trend.DOWN), got {rule.smart_pivot_points.trend}"
 
     def test_downtrend_returns_sell_signal(self):
         """Verify downtrend returns RuleSignal.SELL via shared state."""
@@ -414,7 +414,7 @@ class TestMarketStructureRuleIntegration:
         )
 
         assert hasattr(rule, 'trend'), "MarketStructureRule should have trend property"
-        assert rule.trend == 0, "Initial trend should be 0 (undefined)"
+        assert rule.trend == Trend.UNDEFINED, "Initial trend should be Trend.UNDEFINED"
 
 
 class TestMarketStructureRuleHLLHStability:
@@ -456,12 +456,12 @@ class TestMarketStructureRuleHLLHStability:
             trends.append(rule.trend)
             signals.append(shared_state.get(SharedDictKey.MARKET_STRUCTURE_RULE_SIGNAL))
 
-        # Once uptrend is established, it should not flip to -1
-        first_uptrend_idx = next((i for i, t in enumerate(trends) if t == 1), None)
+        # Once uptrend is established, it should not flip to Trend.DOWN
+        first_uptrend_idx = next((i for i, t in enumerate(trends) if t == Trend.UP), None)
         assert first_uptrend_idx is not None, "Uptrend was never established"
 
         for i in range(first_uptrend_idx, len(trends)):
-            assert trends[i] != -1, f"HL formation incorrectly flipped trend at bar {i}"
+            assert trends[i] != Trend.DOWN, f"HL formation incorrectly flipped trend at bar {i}"
             assert signals[i] != RuleSignal.SELL, f"HL formation incorrectly set SELL signal at bar {i}"
 
     def test_lh_does_not_change_downtrend(self):
@@ -500,12 +500,12 @@ class TestMarketStructureRuleHLLHStability:
             trends.append(rule.trend)
             signals.append(shared_state.get(SharedDictKey.MARKET_STRUCTURE_RULE_SIGNAL))
 
-        # Once downtrend is established, it should not flip to 1
-        first_downtrend_idx = next((i for i, t in enumerate(trends) if t == -1), None)
+        # Once downtrend is established, it should not flip to Trend.UP
+        first_downtrend_idx = next((i for i, t in enumerate(trends) if t == Trend.DOWN), None)
         assert first_downtrend_idx is not None, "Downtrend was never established"
 
         for i in range(first_downtrend_idx, len(trends)):
-            assert trends[i] != 1, f"LH formation incorrectly flipped trend at bar {i}"
+            assert trends[i] != Trend.UP, f"LH formation incorrectly flipped trend at bar {i}"
             assert signals[i] != RuleSignal.BUY, f"LH formation incorrectly set BUY signal at bar {i}"
 
 
