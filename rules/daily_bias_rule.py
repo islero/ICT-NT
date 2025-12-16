@@ -145,7 +145,7 @@ class DailyBiasRuleConfig:
     displacement_body_ratio: float = 0.6
     displacement_lookback: int = 3
     require_pd_array_confluence: bool = False
-    ote_filter_enabled: bool = True
+    ote_filter_enabled: bool = False
     ote_levels: tuple = (0.62, 0.79)
     equilibrium_filter_enabled: bool = False
     neutral_on_conflict: bool = True
