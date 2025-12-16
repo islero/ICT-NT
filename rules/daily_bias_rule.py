@@ -113,6 +113,10 @@ class ReasonCode:
     STALE_DATA = "STALE_DATA"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
     ZONE_MISMATCH = "ZONE_MISMATCH"
+    CANDLE_SEQUENCE_BULLISH = "CANDLE_SEQUENCE_BULLISH"
+    CANDLE_SEQUENCE_BEARISH = "CANDLE_SEQUENCE_BEARISH"
+    CANDLE_SEQUENCE_NO_LONG = "CANDLE_SEQUENCE_NO_LONG"
+    CANDLE_SEQUENCE_NO_SHORT = "CANDLE_SEQUENCE_NO_SHORT"
 
 
 @dataclass
@@ -136,6 +140,7 @@ class DailyBiasRuleConfig:
         respect_weekly_blocks: If True, reconcile with weekly blocking flags.
         max_bias_age_bars: Staleness guard - max bars since last structure confirmation.
         fvg_min_distance_percent: Minimum FVG size as percentage of price.
+        require_candle_sequence: If True, require HH/HL for long bias, LH/LL for short bias.
     """
     bar_type: Optional[BarType] = None
     base_bar_type: Optional[BarType] = None
@@ -152,6 +157,7 @@ class DailyBiasRuleConfig:
     respect_weekly_blocks: bool = True
     max_bias_age_bars: int = 3
     fvg_min_distance_percent: float = 0.0
+    require_candle_sequence: bool = False  # Require HH/HL for longs, LH/LL for shorts
 
 
 class DailyBiasRule(RuleBase):
@@ -487,17 +493,63 @@ class DailyBiasRule(RuleBase):
                 else:
                     self._reason_codes.append(ReasonCode.FVG_BEARISH)
 
+    def _check_candle_sequence(self) -> tuple[bool, bool]:
+        """
+        Check if last 2 candles form HH/HL (bullish) or LH/LL (bearish) sequence.
+
+        Returns:
+            Tuple of (allows_long, allows_short):
+            - allows_long: True if last 2 candles formed higher high AND higher low
+            - allows_short: True if last 2 candles formed lower high AND lower low
+        """
+        if len(self._recent_bars) < 2:
+            # Not enough data, allow both directions
+            return True, True
+
+        # Get last 2 bars
+        prev_bar = self._recent_bars[-2]
+        curr_bar = self._recent_bars[-1]
+
+        prev_high = float(prev_bar.high)
+        prev_low = float(prev_bar.low)
+        curr_high = float(curr_bar.high)
+        curr_low = float(curr_bar.low)
+
+        # Check for higher high and higher low (bullish sequence)
+        higher_high = curr_high > prev_high
+        higher_low = curr_low > prev_low
+        allows_long = higher_high and higher_low
+
+        # Check for lower high and lower low (bearish sequence)
+        lower_high = curr_high < prev_high
+        lower_low = curr_low < prev_low
+        allows_short = lower_high and lower_low
+
+        # Add reason codes
+        if allows_long:
+            self._reason_codes.append(ReasonCode.CANDLE_SEQUENCE_BULLISH)
+        elif not allows_long and self._daily_structure == DailyStructure.BULLISH:
+            self._reason_codes.append(ReasonCode.CANDLE_SEQUENCE_NO_LONG)
+
+        if allows_short:
+            self._reason_codes.append(ReasonCode.CANDLE_SEQUENCE_BEARISH)
+        elif not allows_short and self._daily_structure == DailyStructure.BEARISH:
+            self._reason_codes.append(ReasonCode.CANDLE_SEQUENCE_NO_SHORT)
+
+        return allows_long, allows_short
+
     def _compute_daily_bias(self, current_price: float) -> None:
         """
         Compute daily bias via gated decision pipeline.
 
         Decision logic:
         1. Start with structure-based bias
-        2. Gate by displacement (if required)
-        3. Gate by zone confluence (if required)
-        4. Reconcile with weekly blocks (if enabled)
-        5. Apply staleness guard
-        6. Compute confidence level
+        2. Gate by candle sequence (HH/HL for longs, LH/LL for shorts)
+        3. Gate by displacement (if required)
+        4. Gate by zone confluence (if required)
+        5. Reconcile with weekly blocks (if enabled)
+        6. Apply staleness guard
+        7. Compute confidence level
         """
         # Start with structure-based bias
         if self._daily_structure == DailyStructure.BULLISH:
@@ -508,24 +560,32 @@ class DailyBiasRule(RuleBase):
             candidate_bias = DailyBias.NEUTRAL
             self._reason_codes.append(ReasonCode.INSUFFICIENT_DATA)
 
-        # Gate 1: Displacement requirement
+        # Gate 1: Candle sequence requirement (HH/HL for longs, LH/LL for shorts)
+        if self.config.require_candle_sequence and candidate_bias != DailyBias.NEUTRAL:
+            allows_long, allows_short = self._check_candle_sequence()
+            if candidate_bias == DailyBias.BULLISH and not allows_long:
+                candidate_bias = DailyBias.NEUTRAL
+            elif candidate_bias == DailyBias.BEARISH and not allows_short:
+                candidate_bias = DailyBias.NEUTRAL
+
+        # Gate 2: Displacement requirement
         if self.config.require_displacement and candidate_bias != DailyBias.NEUTRAL:
             if not self._displacement_detected:
                 if self.config.neutral_on_conflict:
                     candidate_bias = DailyBias.NEUTRAL
 
-        # Gate 2: Zone confluence (OTE filter)
+        # Gate 3: Zone confluence (OTE filter)
         if self.config.ote_filter_enabled and candidate_bias != DailyBias.NEUTRAL:
             zone_ok = self._check_zone_confluence(candidate_bias, current_price)
             if not zone_ok and self.config.neutral_on_conflict:
                 self._reason_codes.append(ReasonCode.ZONE_MISMATCH)
                 candidate_bias = DailyBias.NEUTRAL
 
-        # Gate 3: Weekly reconciliation
+        # Gate 4: Weekly reconciliation
         if self.config.respect_weekly_blocks and candidate_bias != DailyBias.NEUTRAL:
             candidate_bias = self._reconcile_with_weekly(candidate_bias)
 
-        # Gate 4: Staleness guard
+        # Gate 5: Staleness guard
         if self._bars_since_structure_change > self.config.max_bias_age_bars:
             if candidate_bias != DailyBias.NEUTRAL:
                 self._reason_codes.append(ReasonCode.STALE_DATA)

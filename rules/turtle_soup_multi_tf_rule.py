@@ -76,6 +76,9 @@ class TurtleSoupMultiTFRule(RuleBase):
         if str(bar.bar_type.standard()) not in subscribed_tfs:
             return True
 
+        if self.shared_state is None:
+            return True
+
         current_date = self._get_current_date(bar)
 
         # Fetch levels maps produced by SearchLiquidityPoolsRule
@@ -321,6 +324,9 @@ class TurtleSoupMultiTFRule(RuleBase):
         backtests, aggregated bars are requested from a 30-day lookback; for
         live mode, individual requests per bar type are issued.
         """
+        if self.shared_state is None:
+            return
+
         key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
         lst = self.shared_state.get(key, [])
         if not lst:
@@ -352,6 +358,9 @@ class TurtleSoupMultiTFRule(RuleBase):
         Ensures the subscription list in the shared state is kept in sync by removing
         each bar type after a best-effort unsubscribed.
         """
+        if self.shared_state is None:
+            return
+
         key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
         lst = self.shared_state.get(key, [])
         for bt in (self.config.levels_sources + self.config.analysis_chain):
