@@ -2,12 +2,15 @@ from typing import List
 
 from nautilus_trader.model import BarType, InstrumentId
 from nautilus_trader.trading.config import StrategyConfig
+from nautilus_trader.core.datetime import dt_to_unix_nanos
 from pandas import Timedelta
+import pandas as pd
 
 from core.enums import MoneyManagementType
 from core.rules import RuleBase, EntryTradingRule, SyncSharedOrdersQuoteRule
 from core.strategies import RuleBasedStrategy
 from rules.daily_bias_rule import DailyBiasRule, DailyBiasRuleConfig
+from rules.debug_rule import DebugRule
 from rules.entry_ict_rule import EntryIctRule, EntryIctRuleConfig
 from rules.expected_target_rule import ExpectedTargetRule, ExpectedTargetRuleConfig
 from rules.liquidity_pool_reuse_rule import LiquidityPoolReuseRule, LiquidityPoolReuseRuleConfig
@@ -146,14 +149,15 @@ class ICTStrategy(RuleBasedStrategy):
         # Initialize rules list
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
-            WeeklyContextRule(
-                shared_state=self.shared_state,
-                strategy=self,
-                config=WeeklyContextRuleConfig(
-                    bar_type=config.weekly_bar_type,
-                    base_bar_type=config.base_bar_type,
-                ),
-            ),
+            #WeeklyContextRule(
+            #    shared_state=self.shared_state,
+            #    strategy=self,
+            #    config=WeeklyContextRuleConfig(
+            #        bar_type=config.weekly_bar_type,
+            #        base_bar_type=config.base_bar_type,
+            #    ),
+            #),
+            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-07-10 15:00:00"))),
             DailyBiasRule(
                 shared_state=self.shared_state,
                 strategy=self,

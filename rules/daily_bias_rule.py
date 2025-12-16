@@ -141,7 +141,7 @@ class DailyBiasRuleConfig:
     base_bar_type: Optional[BarType] = None
     bias_horizon_days: int = 1
     min_swing_points: int = 2
-    require_displacement: bool = True
+    require_displacement: bool = False
     displacement_body_ratio: float = 0.6
     displacement_lookback: int = 3
     require_pd_array_confluence: bool = False
@@ -651,13 +651,13 @@ class DailyBiasRule(RuleBase):
         - Bearish bias: Block longs (favor shorts)
         - Neutral bias: No blocking
         """
-        self._block_longs = False
-        self._block_shorts = False
+        self._block_longs = True
+        self._block_shorts = True
 
         if self._daily_bias == DailyBias.BULLISH:
-            self._block_shorts = True
+            self._block_longs = False
         elif self._daily_bias == DailyBias.BEARISH:
-            self._block_longs = True
+            self._block_shorts = False
 
     def _save_to_shared_state(self) -> None:
         """Save all computed values to shared state."""
