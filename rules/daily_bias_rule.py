@@ -53,9 +53,11 @@ from typing import Optional, List
 
 from nautilus_trader.model import Bar, BarType
 from nautilus_trader.trading import Strategy
+import pandas as pd
 
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
+from core.constants.shared_dict_keys_base import SharedDictKeyBase
 from core.rules.rule_base import RuleBase
 from indicators.smart_pivot_points import SmartPivotPoints, Trend
 from indicators.fibonacci_levels import FibonacciLevels, TradeDirection, PriceZone
@@ -157,7 +159,7 @@ class DailyBiasRuleConfig:
     respect_weekly_blocks: bool = True
     max_bias_age_bars: int = 3
     fvg_min_distance_percent: float = 0.0
-    require_candle_sequence: bool = False  # Require HH/HL for longs, LH/LL for shorts
+    require_candle_sequence: bool = True  # Require HH/HL for longs, LH/LL for shorts
 
 
 class DailyBiasRule(RuleBase):
@@ -210,7 +212,6 @@ class DailyBiasRule(RuleBase):
         self.fvg_indicator = FairValueGap(min_distance_percent=config.fvg_min_distance_percent)
 
         # Internal state
-        self.first_bar_initialized = False
         self._last_close_price: Optional[float] = None
         self._bars_since_structure_change: int = 0
         self._recent_bars: List[Bar] = []  # For displacement detection
@@ -253,15 +254,9 @@ class DailyBiasRule(RuleBase):
         Returns:
             bool: Always returns True (context rules don't block processing)
         """
-        # Determine target bar type
-        target_bar_type = self.config.bar_type if self.config.bar_type else bar.bar_type
-
         # Filter bars - only process matching bar type
-        if str(bar.bar_type) not in str(target_bar_type) and self.first_bar_initialized:
+        if self.config.bar_type and str(bar.bar_type) not in str(self.config.bar_type):
             return True
-
-        if not self.first_bar_initialized:
-            self.first_bar_initialized = True
 
         # Reset reason codes for this evaluation
         self._reason_codes = []
@@ -502,28 +497,19 @@ class DailyBiasRule(RuleBase):
             - allows_long: True if last 2 candles formed higher high AND higher low
             - allows_short: True if last 2 candles formed lower high AND lower low
         """
-        if len(self._recent_bars) < 2:
+        if len(self._recent_bars) < 1:
             # Not enough data, allow both directions
             return True, True
 
-        # Get last 2 bars
-        prev_bar = self._recent_bars[-2]
         curr_bar = self._recent_bars[-1]
+        curr_open = float(curr_bar.open)
+        curr_close = float(curr_bar.close)
 
-        prev_high = float(prev_bar.high)
-        prev_low = float(prev_bar.low)
-        curr_high = float(curr_bar.high)
-        curr_low = float(curr_bar.low)
+        # Check for bullish candle (close > open)
+        allows_long = curr_close > curr_open
 
-        # Check for higher high and higher low (bullish sequence)
-        higher_high = curr_high > prev_high
-        higher_low = curr_low > prev_low
-        allows_long = higher_high and higher_low
-
-        # Check for lower high and lower low (bearish sequence)
-        lower_high = curr_high < prev_high
-        lower_low = curr_low < prev_low
-        allows_short = lower_high and lower_low
+        # Check for bearish candle (close < open)
+        allows_short = curr_close < curr_open
 
         # Add reason codes
         if allows_long:
@@ -748,11 +734,42 @@ class DailyBiasRule(RuleBase):
 
     def on_start(self) -> None:
         """Actions to be performed on strategy start."""
-        pass
+        # Setting the warmed-up and subscribed bar type
+        key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
+
+        if not self.shared_state:
+            return
+
+        lst = self.shared_state.get(key, [])
+        if not lst:  # if the key was missing, we got the default []
+            self.shared_state.set(key, lst)
+
+        # add if not already there (avoid duplicates)
+        if self.config.bar_type and self.config.bar_type.standard() not in lst:
+            lst.append(self.config.bar_type.standard())
+
+            now_ts = pd.Timestamp(self.strategy.clock.timestamp_ns(), tz="UTC", unit="ns")
+            start_time = (now_ts - pd.Timedelta(days=89)).normalize()
+
+            if self.is_backtest_mode:
+                self.strategy.request_aggregated_bars([self.config.bar_type], start=start_time, update_subscriptions=True)
+            else:  # live trading mode
+                self.strategy.request_bars(self.config.bar_type, start=start_time, limit=1000)
+
+            self.strategy.subscribe_bars(self.config.bar_type)
 
     def on_stop(self) -> None:
         """Actions to be performed on strategy stop."""
-        pass
+        self.strategy.unsubscribe_bars(self.config.bar_type)
+
+        if not self.shared_state:
+            return
+
+        # remove the bar type from a list
+        key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
+        lst = self.shared_state.get(key, [])
+        if lst and self.config.bar_type and self.config.bar_type.standard() in lst:
+            lst.remove(self.config.bar_type.standard())
 
     # --- Public Properties ---
 

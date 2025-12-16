@@ -195,3 +195,7 @@ class ICTStrategy(RuleBasedStrategy):
     def on_stop(self) -> None:
         # Unsubscribe base bars
         self.unsubscribe_bars(self.config.base_bar_type)
+
+        # trigger rules on_start
+        for rule in self._rules:
+            rule.on_stop()
