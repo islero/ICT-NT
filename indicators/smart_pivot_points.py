@@ -190,7 +190,13 @@ class SmartPivotPoints(Indicator):
         self._new_major_high = False
         self._new_major_low = False
 
-        if self._major_high is None:
+        # Ensure all state is initialized before using min/max and comparisons.
+        if (
+            self._major_high is None
+            or self._major_low is None
+            or self._candidate_high is None
+            or self._candidate_low is None
+        ):
             self._major_high = bar.high
             self._major_low = bar.low
             self._candidate_high = bar.high
@@ -218,13 +224,23 @@ class SmartPivotPoints(Indicator):
                 # Current bar sets the new working Low
                 self._major_low = bar.low
                 self._candidate_high = bar.high # Reset pullback tracker
-            
+
             else:
                 # Still in initial range, just expand range
-                self._major_high = max(self._major_high, bar.high)
-                self._major_low = min(self._major_low, bar.low)
-                self._candidate_high = max(self._candidate_high, bar.high)
-                self._candidate_low = min(self._candidate_low, bar.low)
+                self._major_high = (
+                    bar.high if self._major_high is None else max(self._major_high, bar.high)
+                )
+                self._major_low = (
+                    bar.low if self._major_low is None else min(self._major_low, bar.low)
+                )
+                self._candidate_high = (
+                    bar.high
+                    if self._candidate_high is None
+                    else max(self._candidate_high, bar.high)
+                )
+                self._candidate_low = (
+                    bar.low if self._candidate_low is None else min(self._candidate_low, bar.low)
+                )
             return
 
         # ---------------------------------------------------------------------
