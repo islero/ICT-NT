@@ -7,7 +7,7 @@ from pandas import Timedelta
 import pandas as pd
 
 from core.enums import MoneyManagementType
-from core.rules import RuleBase, EntryTradingRule, SyncSharedOrdersQuoteRule
+from core.rules import RuleBase, EntryTradingRule, SyncSharedOrdersQuoteRule, PartialCloseQuoteRule
 from core.strategies import RuleBasedStrategy
 from rules.daily_bias_rule import DailyBiasRule, DailyBiasRuleConfig
 from rules.debug_rule import DebugRule
@@ -144,11 +144,23 @@ class ICTStrategy(RuleBasedStrategy):
             config.money_management_type,
             config.fixed_lot,
             config.fixed_risk_percent,
+            use_tp_order=False,  # Use PartialCloseQuoteRule instead
+        )
+
+        # Initialize partial close rule (closes 100% at tp_price)
+        partial_close_rule = PartialCloseQuoteRule(
+            shared_state=self.shared_state,
+            strategy=self,
+            instrument_id=config.instrument_id,
+            use_fixed_tp_price=True,
+            close_percentage=100.0,
+            max_partial_close_count=1,
         )
 
         # Initialize rules list
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
+            partial_close_rule,
             #WeeklyContextRule(
             #    shared_state=self.shared_state,
             #    strategy=self,

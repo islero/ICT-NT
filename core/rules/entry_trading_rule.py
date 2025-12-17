@@ -16,13 +16,15 @@ from risk.my_fixed_risk_sizer import MyFixedRiskSizer
 
 class EntryTradingRule(RuleBase):
     def __init__(self, shared_state: SharedState, strategy: Strategy, instrument_id: InstrumentId,
-                 money_management_type: MoneyManagementType, fixed_lot: float, fixed_risk_percent: float):
+                 money_management_type: MoneyManagementType, fixed_lot: float, fixed_risk_percent: float,
+                 use_tp_order: bool = True):
         super().__init__(shared_state)
         self.strategy = strategy
         self.instrument_id = instrument_id
         self.money_management_type = money_management_type
         self.fixed_lot = fixed_lot
         self.fixed_risk_percent = fixed_risk_percent
+        self.use_tp_order = use_tp_order
 
     def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
         # Ensure shared state is available
@@ -117,7 +119,7 @@ class EntryTradingRule(RuleBase):
             self.add_order_id_shared_state(entry_order, sl_order=sl_order)
             self.add_orders_to_shared_state(entry_order, sl_order=sl_order)
 
-        if tp_price:
+        if tp_price and self.use_tp_order:
             # 2) TAKE PROFIT
             tp_order = self.strategy.order_factory.market_if_touched(
                 instrument_id=instrument.id,

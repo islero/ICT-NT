@@ -159,7 +159,7 @@ class DailyBiasRuleConfig:
     respect_weekly_blocks: bool = True
     max_bias_age_bars: int = 3
     fvg_min_distance_percent: float = 0.0
-    require_candle_sequence: bool = True  # Require HH/HL for longs, LH/LL for shorts
+    require_candle_sequence: bool = False  # Require HH/HL for longs, LH/LL for shorts
 
 
 class DailyBiasRule(RuleBase):

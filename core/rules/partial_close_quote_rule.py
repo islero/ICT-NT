@@ -16,9 +16,10 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
     def __init__(self, shared_state:SharedState,
                  strategy:Strategy,
                  instrument_id:InstrumentId,
-                 take_profit_percentage:float,
-                 close_percentage:float,
-                 max_partial_close_count:int) -> None:
+                 take_profit_percentage:float = 0.0,
+                 close_percentage:float = 100.0,
+                 max_partial_close_count:int = 1,
+                 use_fixed_tp_price:bool = False) -> None:
         super().__init__()
         self.shared_state:SharedState = shared_state
         self.strategy:Strategy = strategy
@@ -26,6 +27,7 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
         self.take_profit_percentage:float = take_profit_percentage
         self.close_percentage:float = close_percentage
         self.max_partial_close_count:int = max_partial_close_count
+        self.use_fixed_tp_price:bool = use_fixed_tp_price
 
         self.__tps_base: Dict[ClientOrderId, float] = {}
         self.__partials_count: Dict[ClientOrderId, int] = {}
@@ -62,7 +64,10 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
             open_order_ids.add(order_id)
             sl_order:Order = orders.get(SharedDictKeyBase.SL_ORDER)
 
-            base_price:float = self.__tps_base.get(order_id, entry_order.avg_px)
+            avg_px = entry_order.avg_px
+            if avg_px is None:
+                continue
+            base_price: float = self.__tps_base.get(order_id) or avg_px
 
             # checking if we have reached the maximum number of partial closes
             partial_close_count: int = self.__partials_count.get(order_id, 0)
@@ -85,19 +90,24 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
             # Align all arithmetic to the instrument's quantity step to avoid double rounding
             step_dec: Decimal = instrument.min_quantity.as_decimal()
 
-            # Compute current quantity after n partial closes (geometric model) and align DOWN to step
-            current_qty_dec_raw: Decimal = base_qty_dec * ((Decimal("1") - p_dec) ** partial_close_count)
-            current_qty_dec: Decimal = (current_qty_dec_raw / step_dec).to_integral_value(rounding=ROUND_FLOOR) * step_dec
+            # Handle 100% close case (full exit)
+            if p_dec >= Decimal("1"):
+                next_close_dec = base_qty_dec
+                remaining_dec = Decimal("0")
+            else:
+                # Compute current quantity after n partial closes (geometric model) and align DOWN to step
+                current_qty_dec_raw: Decimal = base_qty_dec * ((Decimal("1") - p_dec) ** partial_close_count)
+                current_qty_dec: Decimal = (current_qty_dec_raw / step_dec).to_integral_value(rounding=ROUND_FLOOR) * step_dec
 
-            # Split 50/50: take the next close as CEILING to step to ensure progress, remainder is exact difference
-            half_dec: Decimal = current_qty_dec * p_dec  # p_dec is 0.5 in your setup
-            next_close_dec: Decimal = (half_dec / step_dec).to_integral_value(rounding=ROUND_CEILING) * step_dec
-            remaining_dec: Decimal = current_qty_dec - next_close_dec
+                # Split: take the next close as CEILING to step to ensure progress, remainder is exact difference
+                half_dec: Decimal = current_qty_dec * p_dec
+                next_close_dec: Decimal = (half_dec / step_dec).to_integral_value(rounding=ROUND_CEILING) * step_dec
+                remaining_dec: Decimal = current_qty_dec - next_close_dec
 
-            # Guard: if remaining becomes zero but we still have at least one step available, shift one step from close to remain
-            if remaining_dec <= Decimal("0") and current_qty_dec >= step_dec:
-                next_close_dec = current_qty_dec - step_dec
-                remaining_dec = step_dec
+                # Guard: if remaining becomes zero but we still have at least one step available, shift one step from close to remain
+                if remaining_dec <= Decimal("0") and current_qty_dec >= step_dec:
+                    next_close_dec = current_qty_dec - step_dec
+                    remaining_dec = step_dec
 
             # Build Quantity objects from already step-aligned Decimals; make_qty won't change aligned values
             next_close_quantity = instrument.make_qty(next_close_dec)
@@ -131,10 +141,24 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
             - need_to_close: bool flag
             - level: float price level used for the decision
         """
-        percentage = self.take_profit_percentage / 100
         if not entry_order.is_closed:
             return False, 0
 
+        # Use fixed tp_price from shared state if enabled
+        if self.use_fixed_tp_price:
+            tp_price = self.shared_state.get(SharedDictKeyBase.ENTRY_TP_PRICE, None)
+            if tp_price is None:
+                return False, 0
+
+            level = float(tp_price)
+            if entry_order.is_buy:
+                return highest_price >= level, level
+            if entry_order.is_sell:
+                return lowest_price <= level, level
+            return False, 0
+
+        # Use percentage-based calculation
+        percentage = self.take_profit_percentage / 100
         if entry_order.is_buy:
             level = base_price + (base_price * percentage)
             return highest_price >= level, level
