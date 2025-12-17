@@ -35,6 +35,10 @@ class TurtleSoupRule(RuleBase):
 
         bars_slice: List[Bar] = bars[:self.config.turtle_bars_count]
 
+        # Ensure shared state is available
+        if not self.shared_state:
+            return False
+
         # Upper pools: dict -> flat list
         upper_liquidity_pools_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS,None)
         if upper_liquidity_pools_map:
@@ -53,6 +57,10 @@ class TurtleSoupRule(RuleBase):
         return True
 
     def __handle_upper_liquidity_raid(self, bars_slice: List[Bar], upper_liquidity_pools: List[float]) -> bool:
+        # Ensure shared state is available
+        if not self.shared_state:
+            return False
+        
         for pool in upper_liquidity_pools:
             latest_pool = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, None)
             if latest_pool:
@@ -67,6 +75,10 @@ class TurtleSoupRule(RuleBase):
         return False
 
     def __handle_lower_liquidity_raid(self, bars_slice: List[Bar], lower_liquidity_pools: List[float]) -> bool:
+        # Ensure shared state is available
+        if not self.shared_state:
+            return False
+        
         for pool in lower_liquidity_pools:
             latest_pool = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, None)
             if latest_pool:
@@ -140,9 +152,12 @@ class TurtleSoupRule(RuleBase):
         """Actions to be performed on strategy start."""
         # Setting the warmed-up and subscribed bar type
         key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
-        lst = self.shared_state.get(key, [])
-        if not lst:  # if the key was missing, we got the default []
-            self.shared_state.set(key, lst)
+
+        # Ensure shared state is available
+        if self.shared_state:
+            lst = self.shared_state.get(key, [])
+            if not lst:  # if the key was missing, we got the default []
+                self.shared_state.set(key, lst)
 
         # add if not already there (avoid duplicates)
         if self.config.bar_type.standard() not in lst:
@@ -165,6 +180,10 @@ class TurtleSoupRule(RuleBase):
 
         # remove the bar type from a list
         key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
+        
+        # Ensure shared state is available
+        if not self.shared_state:
+            return
         lst = self.shared_state.get(key, [])
         if lst and self.config.bar_type.standard() in lst:
             lst.remove(self.config.bar_type.standard())
