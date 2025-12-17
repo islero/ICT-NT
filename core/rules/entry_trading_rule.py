@@ -25,6 +25,10 @@ class EntryTradingRule(RuleBase):
         self.fixed_risk_percent = fixed_risk_percent
 
     def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
+        # Ensure shared state is available
+        if not self.shared_state:
+            return False
+        
         entry_signal: Optional[RuleSignal] = self.shared_state.get(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.NONE)
         if entry_signal not in (RuleSignal.BUY, RuleSignal.SELL, RuleSignal.BOTH):
             return False
@@ -136,6 +140,10 @@ class EntryTradingRule(RuleBase):
         If a group for the given entry already exists, it will be updated in place
         (adding SL and/or TP) instead of appending a duplicate group.
         """
+        # Ensure shared state is available
+        if not self.shared_state:
+            return False
+        
         key = SharedDictKeyBase.ORDERS_LIST
         orders_list = self.shared_state.get(key, [])
         if not orders_list:  # if the key was missing, we got the default []
@@ -178,6 +186,10 @@ class EntryTradingRule(RuleBase):
         If a group for the given entry already exists, it will be updated in place
         (adding SL and/or TP) instead of appending a duplicate group.
         """
+        # Ensure shared state is available
+        if not self.shared_state:
+            return False
+        
         key = SharedDictKeyBase.ORDERS
         orders = self.shared_state.get(key, [])
         if not orders:  # if the key was missing, we got the default []
