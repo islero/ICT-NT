@@ -88,8 +88,8 @@ class TurtleSoupMultiTFRule(RuleBase):
         # 1) For each level source in order (e.g., Weekly, then Daily)
         for levels_bt in self.config.levels_sources:
             levels_key = str(levels_bt.standard())
-            upper_liquidity_pools = uppers_map.get(levels_key)
-            lower_liquidity_pools = lowers_map.get(levels_key)
+            upper_liquidity_pools: List[tuple[float, int]] = uppers_map.get(levels_key, [])
+            lower_liquidity_pools: List[tuple[float, int]] = lowers_map.get(levels_key, [])
 
             # If there are no levels for this TF yet — skip and wait
             if not upper_liquidity_pools and not lower_liquidity_pools:
@@ -226,8 +226,10 @@ class TurtleSoupMultiTFRule(RuleBase):
                 sl_bar_slice_highs = [float(b.high) for b in sl_bar_slice if b is not None]
                 highest_high_new_bar_in_slice = max(sl_bar_slice_highs)
 
-                stop_loss = max(highest_high_current_tf_in_slice, highest_high_new_bar_in_slice) + self.config.sl_shift
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, stop_loss)
+                if self.shared_state:
+                    stop_loss = max(highest_high_current_tf_in_slice, highest_high_new_bar_in_slice) + self.config.sl_shift
+                    self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, stop_loss)
+                    
                 return pool
         return None
 
@@ -261,8 +263,10 @@ class TurtleSoupMultiTFRule(RuleBase):
                 sl_bar_slice_lows = [float(b.low) for b in sl_bar_slice if b is not None]
                 lowest_low_new_bar_in_slice = min(sl_bar_slice_lows)
 
-                stop_loss = min(lowest_low_current_tf_in_slice, lowest_low_new_bar_in_slice) - self.config.sl_shift
-                self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, stop_loss)
+                if self.shared_state:
+                    stop_loss = min(lowest_low_current_tf_in_slice, lowest_low_new_bar_in_slice) - self.config.sl_shift
+                    self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, stop_loss)
+
                 return pool
         return None
 
