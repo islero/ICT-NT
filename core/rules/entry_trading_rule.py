@@ -258,7 +258,7 @@ class EntryTradingRule(RuleBase):
 
         if equity is None:
             # Fallback: cannot perform risk sizing without balances; use fixed size
-            return instrument.make_qty(self.trade_size)
+            return instrument.make_qty(self.fixed_lot)
 
         # 3) FX rate (quote/settlement -> equity currency). If same currency, use 1
         try:
