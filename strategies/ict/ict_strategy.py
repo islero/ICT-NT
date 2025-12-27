@@ -17,6 +17,7 @@ from rules.liquidity_pool_reuse_rule import LiquidityPoolReuseRule, LiquidityPoo
 from rules.market_structure_rule import MarketStructureRule, MarketStructureRuleConfig
 from rules.reward_risk_ratio_rule import RewardRiskRatioRule, RewardRiskRatioRuleConfig
 from rules.search_liquidity_pools_rule import SearchLiquidityPoolsRule, SearchLiquidityPoolsRuleConfig
+from rules.sma_exit_rule import SMAExitRule, SMAExitRuleConfig
 from rules.turtle_soup_multi_tf_rule import TurtleSoupMultiTFRule, TurtleSoupMultiTFRuleConfig
 from rules.weekly_context_rule import WeeklyContextRule, WeeklyContextRuleConfig
 
@@ -56,6 +57,10 @@ class ICTStrategyConfig(StrategyConfig, frozen=True):
     # ------------- Liquidity Pool Reuse -------------
     liquidity_pool_reuse_bar_type: BarType | None = None
     liquidity_pool_uses_count: int = 1
+
+    # ------------- SMA Exit -------------
+    sma_exit_bar_type: BarType | None = None
+    sma_exit_period: int = 10
 
     # ------------- Money Management -------------
     money_management_type: MoneyManagementType = MoneyManagementType.FIXED_LOT
@@ -157,10 +162,22 @@ class ICTStrategy(RuleBasedStrategy):
             max_partial_close_count=1,
         )
 
+        # Initialize SMA exit rule
+        sma_exit_rule = SMAExitRule(
+            shared_state=self.shared_state,
+            strategy=self,
+            config=SMAExitRuleConfig(
+                bar_type=config.sma_exit_bar_type,
+                period=config.sma_exit_period,
+                instrument_id=config.instrument_id,
+            ),
+        )
+
         # Initialize rules list
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
             partial_close_rule,
+            #sma_exit_rule,
             #WeeklyContextRule(
             #    shared_state=self.shared_state,
             #    strategy=self,

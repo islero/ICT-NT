@@ -116,11 +116,16 @@ class MyFixedRiskSizer(FixedRiskSizer):
             # Round position size to the nearest unit batch size
             position_size_batched = (position_size_batched // unit_batch_size) * unit_batch_size
 
-        # Limit size on max trade size
+        # Limit size on max trade size (if configured)
         if self.instrument.max_quantity is not None:
-            position_size_batched = min(position_size_batched, self.instrument.max_quantity)
+            final_size: Decimal = min(
+                position_size_batched,
+                self.instrument.max_quantity.as_decimal(),
+            )
+        else:
+            final_size: Decimal = position_size_batched
 
-        return Quantity(position_size_batched, precision=self.instrument.size_precision)
+        return self.instrument.make_qty(final_size)
 
     def _calculate_risk_ticks(self, entry: Price, stop_loss: Price):
         return abs(entry - stop_loss) / self.instrument.price_increment
