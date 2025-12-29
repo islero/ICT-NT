@@ -78,6 +78,14 @@ class EntryIctRule(RuleBase):
         """
         if not current_bar:
             return False
+        if not self.shared_state:
+            return False
+
+        existing_signal: Optional[RuleSignal] = self.shared_state.get(
+            SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.NONE
+        )
+        if existing_signal in (RuleSignal.BUY, RuleSignal.SELL):
+            return True
 
         return self.check_long(current_bar) or self.check_short(current_bar)
 

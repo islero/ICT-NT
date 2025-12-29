@@ -106,7 +106,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                 if pool_used is not None:
                     self._mark_pool_usage(pool_used, current_date)
                     self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
-                    self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.SELL)
+                    self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.SELL)
                     self.shared_state.set(SharedDictKey.TURTLE_SOUP_USED_POOL, pool_used)
                     return True
 
@@ -116,7 +116,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                 if pool_used is not None:
                     self._mark_pool_usage(pool_used, current_date)
                     self._cleanup_pool_tracker(upper_liquidity_pools, lower_liquidity_pools, current_date)
-                    self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.BUY)
+                    self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.BUY)
                     self.shared_state.set(SharedDictKey.TURTLE_SOUP_USED_POOL, pool_used)
                     return True
 

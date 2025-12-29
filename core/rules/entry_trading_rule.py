@@ -134,6 +134,8 @@ class EntryTradingRule(RuleBase):
             self.add_order_id_shared_state(entry_order, tp_order=tp_order)
             self.add_orders_to_shared_state(entry_order, tp_order=tp_order)
 
+        self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.NONE)
+
         return True
 
     def add_order_id_shared_state(self, entry_order, sl_order=None, tp_order=None):

@@ -20,6 +20,7 @@ from rules.search_liquidity_pools_rule import SearchLiquidityPoolsRule, SearchLi
 from rules.sma_exit_rule import SMAExitRule, SMAExitRuleConfig
 from rules.turtle_soup_multi_tf_rule import TurtleSoupMultiTFRule, TurtleSoupMultiTFRuleConfig
 from rules.weekly_context_rule import WeeklyContextRule, WeeklyContextRuleConfig
+from rules.fvg_rule import FvgRule, FvgRuleConfig
 
 
 class ICTStrategyConfig(StrategyConfig, frozen=True):
@@ -66,6 +67,16 @@ class ICTStrategyConfig(StrategyConfig, frozen=True):
     money_management_type: MoneyManagementType = MoneyManagementType.FIXED_LOT
     fixed_lot: float = 0.01
     fixed_risk_percent: float = 1.0
+
+    # ------------- FVG Rule -------------
+    fvg_rule_bar_type: BarType | None = None
+    fvg_rule_fvg_bar_type: BarType | None = None
+    fvg_rule_max_signal_age_bars: int = 1
+    fvg_rule_allow_long: bool = True
+    fvg_rule_allow_short: bool = True
+    fvg_rule_sl_buffer_points: float = 0.0
+    fvg_rule_respect_bias_filters: bool = True
+    fvg_rule_min_fvg_distance_percent: float = 0.0
 
 
 class ICTStrategy(RuleBasedStrategy):
@@ -141,6 +152,24 @@ class ICTStrategy(RuleBasedStrategy):
             EntryIctRuleConfig(config.risk_reward_ratio),
         )
 
+        # Initialize FVG rule
+        fvg_rule = FvgRule(
+            self.shared_state,
+            self,
+            FvgRuleConfig(
+                bar_type=config.fvg_rule_bar_type or config.base_bar_type,
+                instrument_id=config.instrument_id,
+                fvg_bar_type=config.fvg_rule_fvg_bar_type,
+                max_signal_age_bars=config.fvg_rule_max_signal_age_bars,
+                allow_long=config.fvg_rule_allow_long,
+                allow_short=config.fvg_rule_allow_short,
+                sl_buffer_points=config.fvg_rule_sl_buffer_points,
+                risk_reward_ratio=config.risk_reward_ratio,
+                respect_bias_filters=config.fvg_rule_respect_bias_filters,
+                min_fvg_distance_percent=config.fvg_rule_min_fvg_distance_percent,
+            ),
+        )
+
         # Initialize entry trading rule
         entry_trading_rule = EntryTradingRule(
             self.shared_state,
@@ -202,10 +231,15 @@ class ICTStrategy(RuleBasedStrategy):
             ),
             search_liquidity_pool_rule,
             expected_target_rule,
+            # Entry signal generators (both use ENTRY_RULE_SIGNAL)
             turtle_soup_rule,
+            fvg_rule,
+            # Validate reward/risk ratio for both turtle_soup and fvg signals
             reward_risk_ratio_rule,
             liquidity_pool_reuse_rule,
+            # entry_ict_rule (Turtle Soup based entries)
             entry_ict_rule,
+            # entry trading rule last (executes the entry signal)
             entry_trading_rule,
         ]
 

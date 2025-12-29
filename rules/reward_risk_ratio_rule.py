@@ -64,16 +64,18 @@ class RewardRiskRatioRule(RuleBase):
         if not current_bar:
             return False
 
-        # Get the turtle soup signal direction
-        turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(
-            SharedDictKey.TURTLE_SOUP_RULE_SIGNAL
+        # Get the entry signal direction
+        entry_signal: Optional[RuleSignal] = self.shared_state.get(
+            SharedDictKeyBase.ENTRY_RULE_SIGNAL
         )
+        if entry_signal is None or entry_signal == RuleSignal.NONE:
+            return True
 
-        if turtle_soup_signal == RuleSignal.BUY:
+        if entry_signal == RuleSignal.BUY:
             if self.check_long_ratio(current_bar):
                 return True
 
-        if turtle_soup_signal == RuleSignal.SELL:
+        if entry_signal == RuleSignal.SELL:
             if self.check_short_ratio(current_bar):
                 return True
 
