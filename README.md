@@ -232,12 +232,6 @@ Navigate to the `notebooks/` directory and open any notebook to run backtests or
 
 ## Configuration
 
-Create a `.env` file in the project root for environment-specific settings:
-
-```env
-# Add your configuration here
-```
-
 ## Testing
 
 Run the test suite:
