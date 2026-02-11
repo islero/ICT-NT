@@ -9,7 +9,6 @@ from pandas import Timedelta
 from core.enums import MoneyManagementType
 from core.rules import EntryTradingRule, RuleBase, SyncSharedOrdersQuoteRule
 from core.strategies import RuleBasedStrategy
-from rules.debug_rule import DebugRule
 from rules.entry_turtle_soup_rule import EntryTurtleSoupRule, EntryTurtleSoupRuleConfig
 from rules.expected_target_rule import ExpectedTargetRule, ExpectedTargetRuleConfig
 from rules.liquidity_pool_reuse_rule import LiquidityPoolReuseRule, LiquidityPoolReuseRuleConfig

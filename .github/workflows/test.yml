@@ -36,9 +36,9 @@ jobs:
 
     - name: Test import of main modules
       run: |
-        python -c "from core.strategies.rule_based_strategy import RuleBasedStrategy; print('✓ Core imports successful')"
-        python -c "from strategies.turtle_soup.turtle_soup_strategy import TurtleSoupStrategy; print('✓ Strategy imports successful')"
-        python -c "from indicators.smart_pivot_points import SmartPivotPoints; print('✓ Indicator imports successful')"
+        python -c "from core.strategies.rule_based_strategy import RuleBasedStrategy; print('[OK] Core imports successful')"
+        python -c "from strategies.turtle_soup.turtle_soup_strategy import TurtleSoupStrategy; print('[OK] Strategy imports successful')"
+        python -c "from indicators.smart_pivot_points import SmartPivotPoints; print('[OK] Indicator imports successful')"
 
   test-coverage:
     runs-on: ubuntu-latest

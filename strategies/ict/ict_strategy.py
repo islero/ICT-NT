@@ -10,7 +10,6 @@ from core.enums import MoneyManagementType
 from core.rules import EntryTradingRule, PartialCloseQuoteRule, RuleBase, SyncSharedOrdersQuoteRule
 from core.strategies import RuleBasedStrategy
 from rules.daily_bias_rule import DailyBiasRule, DailyBiasRuleConfig
-from rules.debug_rule import DebugRule
 from rules.entry_ict_rule import EntryIctRule, EntryIctRuleConfig
 from rules.expected_target_rule import ExpectedTargetRule, ExpectedTargetRuleConfig
 from rules.liquidity_pool_reuse_rule import LiquidityPoolReuseRule, LiquidityPoolReuseRuleConfig

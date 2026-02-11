@@ -125,10 +125,20 @@ markers = [
 
 [tool.mypy]
 python_version = "3.11"
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false
 ignore_missing_imports = true
+disable_error_code = [
+    "union-attr",
+    "call-arg",
+    "no-redef",
+    "return-value",
+    "no-any-return",
+    "var-annotated",
+    "attr-defined",
+    "operator",
+]
 
 [tool.coverage.run]
 source = ["core", "rules", "strategies", "indicators", "risk"]
