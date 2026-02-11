@@ -49,23 +49,24 @@ Bias Determination Pipeline:
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, List
+from typing import List, Optional
 
+import pandas as pd
 from nautilus_trader.model import Bar, BarType
 from nautilus_trader.trading import Strategy
-import pandas as pd
 
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.constants.shared_dict_keys_base import SharedDictKeyBase
 from core.rules.rule_base import RuleBase
-from indicators.smart_pivot_points import SmartPivotPoints, Trend
-from indicators.fibonacci_levels import FibonacciLevels, TradeDirection, PriceZone
 from indicators.fair_value_gap import FairValueGap, FvgDirection
+from indicators.fibonacci_levels import FibonacciLevels, PriceZone, TradeDirection
+from indicators.smart_pivot_points import SmartPivotPoints, Trend
 
 
 class DailyBias(Enum):
     """Daily operational bias classification."""
+
     NEUTRAL = "neutral"
     BULLISH = "bullish"
     BEARISH = "bearish"
@@ -73,6 +74,7 @@ class DailyBias(Enum):
 
 class DailyStructure(Enum):
     """Daily market structure classification."""
+
     NEUTRAL = "neutral"
     BULLISH = "bullish"
     BEARISH = "bearish"
@@ -80,6 +82,7 @@ class DailyStructure(Enum):
 
 class DailyZone(Enum):
     """Daily price zone classification."""
+
     UNKNOWN = "unknown"
     DISCOUNT = "discount"
     PREMIUM = "premium"
@@ -88,6 +91,7 @@ class DailyZone(Enum):
 
 class BiasConfidence(Enum):
     """Confidence level for the daily bias."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -96,6 +100,7 @@ class BiasConfidence(Enum):
 # Reason code constants for transparency
 class ReasonCode:
     """Reason codes for bias determination."""
+
     STRUCT_BULL = "STRUCT_BULL"
     STRUCT_BEAR = "STRUCT_BEAR"
     STRUCT_NEUTRAL = "STRUCT_NEUTRAL"
@@ -144,6 +149,7 @@ class DailyBiasRuleConfig:
         fvg_min_distance_percent: Minimum FVG size as percentage of price.
         require_candle_sequence: If True, require HH/HL for long bias, LH/LL for short bias.
     """
+
     bar_type: Optional[BarType] = None
     base_bar_type: Optional[BarType] = None
     bias_horizon_days: int = 1
@@ -196,12 +202,7 @@ class DailyBiasRule(RuleBase):
         reason_codes: List of reason tokens explaining the bias
     """
 
-    def __init__(
-        self,
-        shared_state: SharedState,
-        strategy: Strategy,
-        config: DailyBiasRuleConfig
-    ):
+    def __init__(self, shared_state: SharedState, strategy: Strategy, config: DailyBiasRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
         self.config = config
@@ -362,11 +363,7 @@ class DailyBiasRule(RuleBase):
             fib_direction = TradeDirection.BUY
 
         # Update Fibonacci levels
-        self.fibonacci_levels.update(
-            swing_low=major_low,
-            swing_high=major_high,
-            direction=fib_direction
-        )
+        self.fibonacci_levels.update(swing_low=major_low, swing_high=major_high, direction=fib_direction)
 
         # Extract key levels
         if self.fibonacci_levels.is_valid:
@@ -669,9 +666,9 @@ class DailyBiasRule(RuleBase):
         # Zone confluence
         if ReasonCode.IN_OTE in self._reason_codes:
             score += 1
-        elif (bias == DailyBias.BULLISH and ReasonCode.IN_DISCOUNT in self._reason_codes):
+        elif bias == DailyBias.BULLISH and ReasonCode.IN_DISCOUNT in self._reason_codes:
             score += 1
-        elif (bias == DailyBias.BEARISH and ReasonCode.IN_PREMIUM in self._reason_codes):
+        elif bias == DailyBias.BEARISH and ReasonCode.IN_PREMIUM in self._reason_codes:
             score += 1
 
         # Freshness
@@ -752,7 +749,9 @@ class DailyBiasRule(RuleBase):
             start_time = (now_ts - pd.Timedelta(days=89)).normalize()
 
             if self.is_backtest_mode:
-                self.strategy.request_aggregated_bars([self.config.bar_type], start=start_time, update_subscriptions=True)
+                self.strategy.request_aggregated_bars(
+                    [self.config.bar_type], start=start_time, update_subscriptions=True
+                )
             else:  # live trading mode
                 self.strategy.request_bars(self.config.bar_type, start=start_time, limit=1000)
 
@@ -876,8 +875,9 @@ class DailyBiasRule(RuleBase):
         if check_price is None:
             return False
 
-        return self.fibonacci_levels.is_in_discount(check_price) or \
-               self.fibonacci_levels.is_in_optimal_entry_zone(check_price)
+        return self.fibonacci_levels.is_in_discount(check_price) or self.fibonacci_levels.is_in_optimal_entry_zone(
+            check_price
+        )
 
     def is_favorable_for_shorts(self, price: Optional[float] = None) -> bool:
         """
@@ -897,8 +897,9 @@ class DailyBiasRule(RuleBase):
         if check_price is None:
             return False
 
-        return self.fibonacci_levels.is_in_premium(check_price) or \
-               self.fibonacci_levels.is_in_optimal_entry_zone(check_price)
+        return self.fibonacci_levels.is_in_premium(check_price) or self.fibonacci_levels.is_in_optimal_entry_zone(
+            check_price
+        )
 
     def is_high_confidence(self) -> bool:
         """Check if the current bias has high confidence."""

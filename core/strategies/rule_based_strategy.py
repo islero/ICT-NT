@@ -1,17 +1,21 @@
 from abc import ABC
-from typing import List, Final
+from typing import Final, List
+
 from nautilus_trader.model import Bar, BarType, QuoteTick
 from nautilus_trader.trading import Strategy
 from nautilus_trader.trading.config import StrategyConfig
+
 from core import SharedState
 from core.rules.quote_tick_rule_base import QuoteTickRuleBase
 from core.rules.rule_base import RuleBase
+
 
 class RuleBasedStrategy(ABC, Strategy):
     """
     Base class for all trading strategies that operate on a list of conditions.
     Conditions are executed in order, and trading logic is triggered if all conditions are met.
     """
+
     def __init__(self, config: StrategyConfig, base_bar_type: BarType):
         """
         :param config: `StrategyConfig` for initializing strategy settings.

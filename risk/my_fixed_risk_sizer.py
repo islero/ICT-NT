@@ -2,9 +2,7 @@ from decimal import Decimal
 
 from nautilus_trader.core.correctness import PyCondition
 from nautilus_trader.model.instruments.base import Instrument
-from nautilus_trader.model.objects import Money
-from nautilus_trader.model.objects import Price
-from nautilus_trader.model.objects import Quantity
+from nautilus_trader.model.objects import Money, Price, Quantity
 from nautilus_trader.risk.sizing import FixedRiskSizer
 
 
@@ -22,16 +20,16 @@ class MyFixedRiskSizer(FixedRiskSizer):
         super().__init__(instrument)
 
     def calculate(
-            self,
-            entry: Price,
-            stop_loss: Price,
-            equity: Money,
-            risk: Decimal,
-            commission_rate: Decimal = Decimal(0),
-            exchange_rate: Decimal = Decimal(1),
-            hard_limit: Decimal | None = None,
-            unit_batch_size: Decimal=Decimal(1),
-            units: int=1,
+        self,
+        entry: Price,
+        stop_loss: Price,
+        equity: Money,
+        risk: Decimal,
+        commission_rate: Decimal = Decimal(0),
+        exchange_rate: Decimal = Decimal(1),
+        hard_limit: Decimal | None = None,
+        unit_batch_size: Decimal = Decimal(1),
+        units: int = 1,
     ) -> Quantity:
         """
         Calculate the position size quantity.
@@ -131,9 +129,7 @@ class MyFixedRiskSizer(FixedRiskSizer):
         return abs(entry - stop_loss) / self.instrument.price_increment
 
     @staticmethod
-    def _calculate_riskable_money(equity: Decimal,
-                                  risk: Decimal,
-                                  commission_rate: Decimal):
+    def _calculate_riskable_money(equity: Decimal, risk: Decimal, commission_rate: Decimal):
         if equity <= 0:
             return Decimal(0)
         risk_money: Decimal = equity * risk

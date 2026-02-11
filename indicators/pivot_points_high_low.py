@@ -42,11 +42,11 @@ class PivotPointsHighLow(Indicator):
         self._is_pivot_high: bool = False
         self._is_pivot_low: bool = False
 
-        self._last_pivot_high_price = None     # Price of last confirmed pivot high
+        self._last_pivot_high_price = None  # Price of last confirmed pivot high
         self._last_pivot_high_ts: Optional[int] = None  # ts_event of center bar
 
-        self._last_pivot_low_price = None      # Price of last confirmed pivot low
-        self._last_pivot_low_ts: Optional[int] = None   # ts_event of center bar
+        self._last_pivot_low_price = None  # Price of last confirmed pivot low
+        self._last_pivot_low_ts: Optional[int] = None  # ts_event of center bar
 
         super().__init__([left, right])
 
@@ -90,7 +90,7 @@ class PivotPointsHighLow(Indicator):
 
         if is_pivot_high:
             self._is_pivot_high = True
-            pivot_bar = list(self._bars)[center_idx-1]
+            pivot_bar = list(self._bars)[center_idx - 1]
             self._last_pivot_high_price = center_high
             self._last_pivot_high_ts = pivot_bar.ts_event
 
@@ -106,7 +106,7 @@ class PivotPointsHighLow(Indicator):
 
         if is_pivot_low:
             self._is_pivot_low = True
-            pivot_bar = list(self._bars)[center_idx-1]
+            pivot_bar = list(self._bars)[center_idx - 1]
             self._last_pivot_low_price = center_low
             self._last_pivot_low_ts = pivot_bar.ts_event
 

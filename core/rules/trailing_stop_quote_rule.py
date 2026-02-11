@@ -1,28 +1,35 @@
 from __future__ import annotations
+
 from typing import Dict
+
+from nautilus_trader.model import Bar, QuoteTick
+from nautilus_trader.model.identifiers import ClientOrderId, InstrumentId
 from nautilus_trader.model.instruments import Instrument
 from nautilus_trader.model.orders import Order, StopMarketOrder
 from nautilus_trader.trading import Strategy
-from nautilus_trader.model.identifiers import InstrumentId, ClientOrderId
-from nautilus_trader.model import QuoteTick, Bar
+
 from core import SharedState
 from core.constants import SharedDictKeyBase
 from core.rules.quote_tick_rule_base import QuoteTickRuleBase
 
+
 class TrailingStopQuoteRule(QuoteTickRuleBase):
-    def __init__(self, shared_state:SharedState,
-                 strategy:Strategy,
-                 instrument_id:InstrumentId,
-                 distance_percentage: float,
-                 step: float = 0.0,  # absolute price step required to move SL; 0 => move whenever better
-                 enable_trailing_from_breakeven: bool = True) -> None:
+    def __init__(
+        self,
+        shared_state: SharedState,
+        strategy: Strategy,
+        instrument_id: InstrumentId,
+        distance_percentage: float,
+        step: float = 0.0,  # absolute price step required to move SL; 0 => move whenever better
+        enable_trailing_from_breakeven: bool = True,
+    ) -> None:
         super().__init__()
-        self.shared_state:SharedState = shared_state
-        self.strategy:Strategy = strategy
-        self.instrument_id:InstrumentId = instrument_id
-        self.distance_percentage:float = distance_percentage
-        self.step:float = step
-        self.enable_trailing_from_breakeven:bool = enable_trailing_from_breakeven
+        self.shared_state: SharedState = shared_state
+        self.strategy: Strategy = strategy
+        self.instrument_id: InstrumentId = instrument_id
+        self.distance_percentage: float = distance_percentage
+        self.step: float = step
+        self.enable_trailing_from_breakeven: bool = enable_trailing_from_breakeven
         self.__sl_prices: Dict[ClientOrderId, float] = {}
 
     def evaluate(self, bar: Bar, current_bar: Bar = None) -> bool:
@@ -63,7 +70,9 @@ class TrailingStopQuoteRule(QuoteTickRuleBase):
 
             sl_price: float = self.__sl_prices.get(order_id, sl_order.trigger_price)
 
-            if not self.__is_trailing_allowed(entry_order.is_buy, entry_order.is_sell, normalized_entry_price, sl_price):
+            if not self.__is_trailing_allowed(
+                entry_order.is_buy, entry_order.is_sell, normalized_entry_price, sl_price
+            ):
                 continue
 
             desired_sl_price = self.__desired_trailing_stop(lowest_price, highest_price, entry_order)
@@ -90,7 +99,7 @@ class TrailingStopQuoteRule(QuoteTickRuleBase):
 
         return True
 
-    def __is_trailing_allowed(self, is_buy:bool, is_sell:bool, entry_price:float, sl_price:float) -> bool:
+    def __is_trailing_allowed(self, is_buy: bool, is_sell: bool, entry_price: float, sl_price: float) -> bool:
         """Checks if the trailing stop is allowed"""
         if not self.enable_trailing_from_breakeven:
             return True
@@ -102,7 +111,7 @@ class TrailingStopQuoteRule(QuoteTickRuleBase):
 
         return False
 
-    def __desired_trailing_stop(self, lowest_price: float, highest_price: float, entry_order:Order) -> float | None:
+    def __desired_trailing_stop(self, lowest_price: float, highest_price: float, entry_order: Order) -> float | None:
         """
         For LONG: SL = current * (1 - distance%)
         For SHORT: SL = current * (1 + distance%)
@@ -114,9 +123,9 @@ class TrailingStopQuoteRule(QuoteTickRuleBase):
             return lowest_price * (1 + percentage)
         return None
 
-    def __can_use_new_sl(self, old_sl_price:float, new_sl_price:float, entry_order:Order) -> float | None:
+    def __can_use_new_sl(self, old_sl_price: float, new_sl_price: float, entry_order: Order) -> float | None:
         if entry_order.is_buy:
-            move_percent:float = ((new_sl_price - old_sl_price) / old_sl_price) * 100.0
+            move_percent: float = ((new_sl_price - old_sl_price) / old_sl_price) * 100.0
             return move_percent >= self.step
         elif entry_order.is_sell:
             move_percent = ((old_sl_price - new_sl_price) / old_sl_price) * 100.0

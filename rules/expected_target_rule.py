@@ -22,6 +22,7 @@ class ExpectedTargetRuleConfig:
         left: Number of bars to the left of pivot candidate (default: 10)
         right: Number of bars to the right of pivot candidate (default: 10)
     """
+
     bar_type: BarType
     left: int = 10
     right: int = 10
@@ -36,21 +37,13 @@ class ExpectedTargetRule(RuleBase):
     - Tracks the latest high pivot point and stores it in shared state
     """
 
-    def __init__(
-        self,
-        shared_state: SharedState,
-        strategy: Strategy,
-        config: ExpectedTargetRuleConfig
-    ):
+    def __init__(self, shared_state: SharedState, strategy: Strategy, config: ExpectedTargetRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
         self.config = config
 
         # Initialize the Pivot Points indicator
-        self.pivot_indicator = PivotPointsHighLow(
-            left=config.left,
-            right=config.right
-        )
+        self.pivot_indicator = PivotPointsHighLow(left=config.left, right=config.right)
 
         self.first_bar_initialized = False
 
@@ -79,23 +72,19 @@ class ExpectedTargetRule(RuleBase):
         # Update the shared state with the latest pivot high if available
         if self.pivot_indicator.last_pivot_high_price is not None:
             self.shared_state.set(
-                SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_HIGH_PRICE,
-                float(self.pivot_indicator.last_pivot_high_price)
+                SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_HIGH_PRICE, float(self.pivot_indicator.last_pivot_high_price)
             )
             self.shared_state.set(
-                SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_HIGH_TS,
-                self.pivot_indicator.last_pivot_high_ts
+                SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_HIGH_TS, self.pivot_indicator.last_pivot_high_ts
             )
 
         # Update the shared state with the latest pivot low if available
         if self.pivot_indicator.last_pivot_low_price is not None:
             self.shared_state.set(
-                SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_LOW_PRICE,
-                float(self.pivot_indicator.last_pivot_low_price)
+                SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_LOW_PRICE, float(self.pivot_indicator.last_pivot_low_price)
             )
             self.shared_state.set(
-                SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_LOW_TS,
-                self.pivot_indicator.last_pivot_low_ts
+                SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_LOW_TS, self.pivot_indicator.last_pivot_low_ts
             )
 
         return True
@@ -121,7 +110,9 @@ class ExpectedTargetRule(RuleBase):
             start_time = (now_ts - pd.Timedelta(days=3)).normalize()
 
             if self.is_backtest_mode:
-                self.strategy.request_aggregated_bars([self.config.bar_type], start=start_time, update_subscriptions=True)
+                self.strategy.request_aggregated_bars(
+                    [self.config.bar_type], start=start_time, update_subscriptions=True
+                )
             else:  # live trading mode
                 self.strategy.request_bars(self.config.bar_type, start=start_time, limit=1000)
 

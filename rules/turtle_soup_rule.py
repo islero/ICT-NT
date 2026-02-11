@@ -1,18 +1,22 @@
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import Dict, List
+
 import pandas as pd
-from nautilus_trader.model import BarType, Bar
+from nautilus_trader.model import Bar, BarType
 from nautilus_trader.trading import Strategy
+
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.constants import SharedDictKeyBase
 from core.enums import RuleSignal
 from core.rules import RuleBase
 
+
 @dataclass
 class TurtleSoupRuleConfig:
-    bar_type: BarType                 # target bar type to search the liquidity pools
-    turtle_bars_count: int            # how many bars to consider when forming a turtle soup
+    bar_type: BarType  # target bar type to search the liquidity pools
+    turtle_bars_count: int  # how many bars to consider when forming a turtle soup
+
 
 class TurtleSoupRule(RuleBase):
     def __init__(self, shared_state: SharedState, strategy: Strategy, config: TurtleSoupRuleConfig):
@@ -33,14 +37,16 @@ class TurtleSoupRule(RuleBase):
         if not bars or len(bars) < self.config.turtle_bars_count:
             return True
 
-        bars_slice: List[Bar] = bars[:self.config.turtle_bars_count]
+        bars_slice: List[Bar] = bars[: self.config.turtle_bars_count]
 
         # Ensure shared state is available
         if not self.shared_state:
             return False
 
         # Upper pools: dict -> flat list
-        upper_liquidity_pools_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS,None)
+        upper_liquidity_pools_map: Dict[str, List[float]] = self.shared_state.get(
+            SharedDictKey.UPPER_LIQUIDITY_POOLS, None
+        )
         if upper_liquidity_pools_map:
             upper_liquidity_pools: List[float] = [p for ps in upper_liquidity_pools_map.values() for p in ps]
             if self.__handle_upper_liquidity_raid(bars_slice, upper_liquidity_pools):
@@ -48,7 +54,9 @@ class TurtleSoupRule(RuleBase):
                 return True
 
         # Lower pools: dict -> flat list
-        lower_liquidity_pools_map: Dict[str, List[float]] = self.shared_state.get(SharedDictKey.LOWER_LIQUIDITY_POOLS,None)
+        lower_liquidity_pools_map: Dict[str, List[float]] = self.shared_state.get(
+            SharedDictKey.LOWER_LIQUIDITY_POOLS, None
+        )
         if lower_liquidity_pools_map:
             lower_liquidity_pools: List[float] = [p for ps in lower_liquidity_pools_map.values() for p in ps]
             if self.__handle_lower_liquidity_raid(bars_slice, lower_liquidity_pools):
@@ -60,7 +68,7 @@ class TurtleSoupRule(RuleBase):
         # Ensure shared state is available
         if not self.shared_state:
             return False
-        
+
         for pool in upper_liquidity_pools:
             latest_pool = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_UPPER_POOL_PRICE, None)
             if latest_pool:
@@ -78,7 +86,7 @@ class TurtleSoupRule(RuleBase):
         # Ensure shared state is available
         if not self.shared_state:
             return False
-        
+
         for pool in lower_liquidity_pools:
             latest_pool = self.shared_state.get(SharedDictKey.TURTLE_SOUP_LATEST_LOWER_POOL_PRICE, None)
             if latest_pool:
@@ -167,8 +175,9 @@ class TurtleSoupRule(RuleBase):
             start_time = (now_ts - pd.Timedelta(days=30)).normalize()
 
             if self.is_backtest_mode:
-                self.strategy.request_aggregated_bars([self.config.bar_type], start=start_time,
-                                                      update_subscriptions=True)
+                self.strategy.request_aggregated_bars(
+                    [self.config.bar_type], start=start_time, update_subscriptions=True
+                )
             else:  # live trading mode
                 self.strategy.request_bars(self.config.bar_type, start=start_time, limit=1000)
 
@@ -180,7 +189,7 @@ class TurtleSoupRule(RuleBase):
 
         # remove the bar type from a list
         key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
-        
+
         # Ensure shared state is available
         if not self.shared_state:
             return

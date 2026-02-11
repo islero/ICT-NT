@@ -6,6 +6,7 @@ from core.strategies import RuleBasedStrategy
 
 class EmptyStrategyConfig(StrategyConfig, frozen=True):
     """Minimal configuration for an empty strategy."""
+
     base_bar_type: BarType
 
 

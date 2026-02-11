@@ -4,15 +4,18 @@ from typing import Optional
 import pandas as pd
 from nautilus_trader.model import Bar
 from nautilus_trader.trading import Strategy
+
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.constants import SharedDictKeyBase
 from core.enums import RuleSignal
 from core.rules import RuleBase
 
+
 @dataclass
 class EntryTurtleSoupRuleConfig:
     risk_reward_ratio: float = 2.0
+
 
 class EntryTurtleSoupRule(RuleBase):
     def __init__(self, shared_state: SharedState, strategy: Strategy, config: EntryTurtleSoupRuleConfig):
@@ -27,8 +30,8 @@ class EntryTurtleSoupRule(RuleBase):
 
         # Check if the date is 2025-09-15
         # TODO: Remove this once it's fixed
-        #bar_date = pd.Timestamp(current_bar.ts_init, unit='ns', tz='UTC').date()
-        #if bar_date == pd.Timestamp('2025-09-15').date():
+        # bar_date = pd.Timestamp(current_bar.ts_init, unit='ns', tz='UTC').date()
+        # if bar_date == pd.Timestamp('2025-09-15').date():
         #    return False
 
         return self.check_long(current_bar) or self.check_short(current_bar)
@@ -54,7 +57,9 @@ class EntryTurtleSoupRule(RuleBase):
             self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
             return False
 
-        take_profit_price = current_bar.close + (self.config.risk_reward_ratio * abs(current_bar.close - stop_loss_price))
+        take_profit_price = current_bar.close + (
+            self.config.risk_reward_ratio * abs(current_bar.close - stop_loss_price)
+        )
 
         self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.BUY)
         self.shared_state.set(SharedDictKeyBase.ENTRY_TP_PRICE, take_profit_price)
@@ -85,7 +90,9 @@ class EntryTurtleSoupRule(RuleBase):
             self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
             return False
 
-        take_profit_price = current_bar.close - (self.config.risk_reward_ratio * abs(stop_loss_price - current_bar.close))
+        take_profit_price = current_bar.close - (
+            self.config.risk_reward_ratio * abs(stop_loss_price - current_bar.close)
+        )
 
         self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.SELL)
         self.shared_state.set(SharedDictKeyBase.ENTRY_TP_PRICE, take_profit_price)

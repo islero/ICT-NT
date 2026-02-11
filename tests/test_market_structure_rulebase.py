@@ -11,15 +11,15 @@ These tests verify:
 - Saves signal to SharedDictKey.MARKET_STRUCTURE_RULE_SIGNAL
 """
 
-import sys
 import os
-from unittest.mock import MagicMock
+import sys
 from abc import ABC, abstractmethod
+from unittest.mock import MagicMock
 
 import pytest
 
 # Ensure we can import from the project root
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # --- MOCKING NAUTILUS TRADER AND OTHER DEPENDENCIES ---
 # Create comprehensive mocks before any imports
@@ -57,17 +57,20 @@ class MockIndicator:
 sys.modules["nautilus_trader.indicators.base"].Indicator = MockIndicator
 sys.modules["nautilus_trader.model.data"].Bar = MagicMock()
 
-# Import SmartPivotPoints (this works since indicator is implemented)
-from indicators.smart_pivot_points import SmartPivotPoints, Trend
+from constants.shared_dict_key import SharedDictKey
 
 # Import SharedState and RuleSignal before mocking core.rules
 from core import SharedState
 from core.enums import RuleSignal
-from constants.shared_dict_key import SharedDictKey
+
+# Import SmartPivotPoints (this works since indicator is implemented)
+from indicators.smart_pivot_points import SmartPivotPoints, Trend
+
 
 # Now create a mock for RuleBase that we can use
 class MockRuleBase(ABC):
     """Mock RuleBase for testing."""
+
     is_backtest = False
 
     def __init__(self, shared_state=None):
@@ -86,6 +89,7 @@ class MockRuleBase(ABC):
     def on_stop(self):
         pass
 
+
 # Mock the core.rules module to avoid cascading imports
 mock_rules_module = MagicMock()
 mock_rules_module.RuleBase = MockRuleBase
@@ -95,6 +99,7 @@ sys.modules["core.rules.rule_base"].RuleBase = MockRuleBase
 
 # Now import the rule - but we need to create it inline since imports are problematic
 # Instead, let's create the MarketStructureRule class directly in the test
+
 
 # Mock Bar object for our use
 class MockBar:
@@ -113,13 +118,7 @@ def _bars_from_ohlc(series: list[tuple[float, float, float, float]]) -> list[Moc
     """Build bars from a list of (open, high, low, close) tuples."""
     bars = []
     for i, (o, h, l, c) in enumerate(series):
-        bars.append(MockBar(
-            open_price=o,
-            high=h,
-            low=l,
-            close=c,
-            ts_event=i * 1000
-        ))
+        bars.append(MockBar(open_price=o, high=h, low=l, close=c, ts_event=i * 1000))
     return bars
 
 
@@ -131,6 +130,7 @@ from typing import Optional
 @dataclass
 class MarketStructureRuleConfig:
     """Configuration for Market Structure Rule."""
+
     bar_type = None
 
 
@@ -139,12 +139,7 @@ class MarketStructureRule(MockRuleBase):
     Market Structure Rule using SmartPivotPoints indicator.
     """
 
-    def __init__(
-        self,
-        shared_state: SharedState,
-        strategy,
-        config: MarketStructureRuleConfig
-    ):
+    def __init__(self, shared_state: SharedState, strategy, config: MarketStructureRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
         self.config = config
@@ -196,19 +191,15 @@ class TestMarketStructureRuleUptrend:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # Build uptrend-friendly OHLC series
         uptrend_prices = [
-            (97, 100, 95, 98),     # 0. Initial range
-            (98, 105, 97, 104),    # 1. Potential HH
+            (97, 100, 95, 98),  # 0. Initial range
+            (98, 105, 97, 104),  # 1. Potential HH
             (104, 106, 100, 106),  # 2. Break above 105 -> UPTREND confirmed
-            (106, 107, 99, 100),   # 3. Pullback (potential HL)
-            (100, 103, 98, 102),   # 4. Continue pullback
+            (106, 107, 99, 100),  # 3. Pullback (potential HL)
+            (100, 103, 98, 102),  # 4. Continue pullback
             (102, 108, 101, 107),  # 5. Break above 107 confirms HL, new HH
             (107, 110, 104, 109),  # 6. Continue up - HH progression
         ]
@@ -222,8 +213,9 @@ class TestMarketStructureRuleUptrend:
         assert rule.trend == Trend.UP, f"Expected uptrend (Trend.UP), got {rule.trend}"
 
         # Check via rule's internal indicator
-        assert rule.smart_pivot_points.trend == Trend.UP, \
-            f"Expected uptrend (Trend.UP), got {rule.smart_pivot_points.trend}"
+        assert (
+            rule.smart_pivot_points.trend == Trend.UP
+        ), f"Expected uptrend (Trend.UP), got {rule.smart_pivot_points.trend}"
 
     def test_uptrend_returns_buy_signal(self):
         """Verify uptrend returns RuleSignal.BUY via shared state."""
@@ -231,11 +223,7 @@ class TestMarketStructureRuleUptrend:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # Build uptrend-friendly OHLC series
         uptrend_prices = [
@@ -268,21 +256,17 @@ class TestMarketStructureRuleDowntrend:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # Build downtrend-friendly OHLC series
         downtrend_prices = [
             (107, 110, 105, 108),  # 0. Initial range
             (108, 108, 102, 103),  # 1. Drop
-            (103, 105, 100, 99),   # 2. Break below 102 -> DOWNTREND confirmed
-            (99, 106, 99, 105),    # 3. Pullback (potential LH)
+            (103, 105, 100, 99),  # 2. Break below 102 -> DOWNTREND confirmed
+            (99, 106, 99, 105),  # 3. Pullback (potential LH)
             (105, 107, 101, 102),  # 4. Continue pullback
-            (102, 103, 95, 96),    # 5. Break below 99 confirms LH, new LL
-            (96, 100, 92, 93),     # 6. Continue down - LL progression
+            (102, 103, 95, 96),  # 5. Break below 99 confirms LH, new LL
+            (96, 100, 92, 93),  # 6. Continue down - LL progression
         ]
 
         bars = _bars_from_ohlc(downtrend_prices)
@@ -294,8 +278,9 @@ class TestMarketStructureRuleDowntrend:
         assert rule.trend == Trend.DOWN, f"Expected downtrend (Trend.DOWN), got {rule.trend}"
 
         # Check via rule's internal indicator
-        assert rule.smart_pivot_points.trend == Trend.DOWN, \
-            f"Expected downtrend (Trend.DOWN), got {rule.smart_pivot_points.trend}"
+        assert (
+            rule.smart_pivot_points.trend == Trend.DOWN
+        ), f"Expected downtrend (Trend.DOWN), got {rule.smart_pivot_points.trend}"
 
     def test_downtrend_returns_sell_signal(self):
         """Verify downtrend returns RuleSignal.SELL via shared state."""
@@ -303,17 +288,13 @@ class TestMarketStructureRuleDowntrend:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # Build downtrend-friendly OHLC series
         downtrend_prices = [
             (107, 110, 105, 108),
             (108, 108, 102, 103),
-            (103, 105, 100, 99),   # Break below -> DOWNTREND
+            (103, 105, 100, 99),  # Break below -> DOWNTREND
         ]
 
         bars = _bars_from_ohlc(downtrend_prices)
@@ -335,11 +316,7 @@ class TestMarketStructureRuleUndefined:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # Only one bar - not enough to establish trend
         prices = [
@@ -365,25 +342,20 @@ class TestMarketStructureRuleIntegration:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # The rule should have a SmartPivotPoints indicator instance
-        assert hasattr(rule, 'smart_pivot_points'), \
-            "MarketStructureRule should have a smart_pivot_points attribute"
+        assert hasattr(rule, "smart_pivot_points"), "MarketStructureRule should have a smart_pivot_points attribute"
 
         # Verify it's a SmartPivotPoints instance
-        assert isinstance(rule.smart_pivot_points, SmartPivotPoints), \
-            f"Expected SmartPivotPoints indicator, got {type(rule.smart_pivot_points)}"
+        assert isinstance(
+            rule.smart_pivot_points, SmartPivotPoints
+        ), f"Expected SmartPivotPoints indicator, got {type(rule.smart_pivot_points)}"
 
     def test_rule_inherits_from_rulebase(self):
         """Verify that MarketStructureRule inherits from RuleBase."""
         # Check inheritance (using our MockRuleBase)
-        assert issubclass(MarketStructureRule, MockRuleBase), \
-            "MarketStructureRule should inherit from RuleBase"
+        assert issubclass(MarketStructureRule, MockRuleBase), "MarketStructureRule should inherit from RuleBase"
 
     def test_rule_implements_evaluate_method(self):
         """Verify that MarketStructureRule implements the evaluate method."""
@@ -391,14 +363,10 @@ class TestMarketStructureRuleIntegration:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # Verify evaluate method exists and is callable
-        assert hasattr(rule, 'evaluate'), "MarketStructureRule should have evaluate method"
+        assert hasattr(rule, "evaluate"), "MarketStructureRule should have evaluate method"
         assert callable(rule.evaluate), "evaluate should be callable"
 
     def test_rule_has_trend_property(self):
@@ -407,13 +375,9 @@ class TestMarketStructureRuleIntegration:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
-        assert hasattr(rule, 'trend'), "MarketStructureRule should have trend property"
+        assert hasattr(rule, "trend"), "MarketStructureRule should have trend property"
         assert rule.trend == Trend.UNDEFINED, "Initial trend should be Trend.UNDEFINED"
 
 
@@ -426,23 +390,19 @@ class TestMarketStructureRuleHLLHStability:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # Establish uptrend first
         setup_prices = [
-            (97, 100, 95, 98),     # 0. Initial range
-            (98, 101, 96, 100),    # 1. Inside
-            (100, 106, 98, 105),   # 2. Break above -> UPTREND
+            (97, 100, 95, 98),  # 0. Initial range
+            (98, 101, 96, 100),  # 1. Inside
+            (100, 106, 98, 105),  # 2. Break above -> UPTREND
         ]
 
         # HL-stability: pullback that should remain uptrend
         hl_prices = [
             (105, 106, 100, 101),  # 3. Pullback (HL forming)
-            (101, 104, 99, 103),   # 4. Deeper pullback
+            (101, 104, 99, 103),  # 4. Deeper pullback
             (103, 107, 101, 106),  # 5. Resume uptrend
         ]
 
@@ -470,11 +430,7 @@ class TestMarketStructureRuleHLLHStability:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # Establish downtrend first
         setup_prices = [
@@ -487,7 +443,7 @@ class TestMarketStructureRuleHLLHStability:
         lh_prices = [
             (101, 107, 100, 106),  # 3. Bounce (LH forming)
             (106, 109, 103, 105),  # 4. Higher bounce
-            (105, 106, 99, 100),   # 5. Resume downtrend
+            (105, 106, 99, 100),  # 5. Resume downtrend
         ]
 
         all_prices = setup_prices + lh_prices
@@ -518,17 +474,13 @@ class TestMarketStructureRuleSignalTransitions:
         mock_strategy = MagicMock()
         config = MarketStructureRuleConfig()
 
-        rule = MarketStructureRule(
-            shared_state=shared_state,
-            strategy=mock_strategy,
-            config=config
-        )
+        rule = MarketStructureRule(shared_state=shared_state, strategy=mock_strategy, config=config)
 
         # First establish downtrend
         downtrend_prices = [
             (107, 110, 105, 108),
             (108, 108, 102, 103),
-            (103, 105, 100, 99),   # Break below -> DOWNTREND
+            (103, 105, 100, 99),  # Break below -> DOWNTREND
         ]
 
         bars = _bars_from_ohlc(downtrend_prices)
@@ -541,7 +493,7 @@ class TestMarketStructureRuleSignalTransitions:
 
         # Now reverse to uptrend (break above major high)
         reversal_prices = [
-            (99, 112, 99, 111),    # Break above major high -> UPTREND
+            (99, 112, 99, 111),  # Break above major high -> UPTREND
         ]
 
         bars = _bars_from_ohlc(reversal_prices)

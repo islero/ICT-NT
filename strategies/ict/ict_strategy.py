@@ -1,13 +1,13 @@
 from typing import List
 
+import pandas as pd
+from nautilus_trader.core.datetime import dt_to_unix_nanos
 from nautilus_trader.model import BarType, InstrumentId
 from nautilus_trader.trading.config import StrategyConfig
-from nautilus_trader.core.datetime import dt_to_unix_nanos
 from pandas import Timedelta
-import pandas as pd
 
 from core.enums import MoneyManagementType
-from core.rules import RuleBase, EntryTradingRule, SyncSharedOrdersQuoteRule, PartialCloseQuoteRule
+from core.rules import EntryTradingRule, PartialCloseQuoteRule, RuleBase, SyncSharedOrdersQuoteRule
 from core.strategies import RuleBasedStrategy
 from rules.daily_bias_rule import DailyBiasRule, DailyBiasRuleConfig
 from rules.debug_rule import DebugRule
@@ -24,6 +24,7 @@ from rules.weekly_context_rule import WeeklyContextRule, WeeklyContextRuleConfig
 
 class ICTStrategyConfig(StrategyConfig, frozen=True):
     """Configuration for ICT strategy."""
+
     instrument_id: InstrumentId
     base_bar_type: BarType
     weekly_bar_type: BarType | None = None
@@ -177,16 +178,16 @@ class ICTStrategy(RuleBasedStrategy):
         self._rules = [
             SyncSharedOrdersQuoteRule(self.shared_state, self, config.instrument_id),
             partial_close_rule,
-            #sma_exit_rule,
-            #WeeklyContextRule(
+            # sma_exit_rule,
+            # WeeklyContextRule(
             #    shared_state=self.shared_state,
             #    strategy=self,
             #    config=WeeklyContextRuleConfig(
             #        bar_type=config.weekly_bar_type,
             #        base_bar_type=config.base_bar_type,
             #    ),
-            #),
-            #DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-07-10 15:00:00"))),
+            # ),
+            # DebugRule(self, dt_to_unix_nanos(pd.Timestamp("2025-07-10 15:00:00"))),
             DailyBiasRule(
                 shared_state=self.shared_state,
                 strategy=self,

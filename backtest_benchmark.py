@@ -1,19 +1,20 @@
 # imports
+import sys
 import time
+from pathlib import Path
+
 import pandas as pd
-from nautilus_trader.backtest.config import BacktestVenueConfig, BacktestDataConfig, BacktestRunConfig
-from nautilus_trader.backtest.engine import BacktestResult, BacktestEngine, BacktestEngineConfig
+from nautilus_trader.backtest.config import BacktestDataConfig, BacktestRunConfig, BacktestVenueConfig
+from nautilus_trader.backtest.engine import BacktestEngine, BacktestEngineConfig, BacktestResult
 from nautilus_trader.backtest.node import BacktestNode
 from nautilus_trader.common.config import LoggingConfig
 from nautilus_trader.core.datetime import dt_to_unix_nanos
-from nautilus_trader.model import BarType, Bar, Venue, InstrumentId
+from nautilus_trader.model import Bar, BarType, InstrumentId, Venue
 from nautilus_trader.model.enums import OmsType
 from nautilus_trader.persistence.catalog import ParquetDataCatalog
 from nautilus_trader.persistence.config import DataCatalogConfig
 from nautilus_trader.test_kit.providers import TestInstrumentProvider
 from nautilus_trader.trading.config import ImportableStrategyConfig
-import sys
-from pathlib import Path
 
 sys.path.append(str(Path.cwd().parent))
 
@@ -35,11 +36,7 @@ venue = BacktestVenueConfig(
 )
 
 # Configure a catalog for a live system
-catalog_cfg = DataCatalogConfig(
-    path=str(catalog.path),
-    fs_protocol="file",
-    name="local"
-)
+catalog_cfg = DataCatalogConfig(path=str(catalog.path), fs_protocol="file", name="local")
 
 base_bar_type = BarType.from_str(f"{instrument_id}-1-MINUTE-LAST-EXTERNAL")
 data = BacktestDataConfig(
@@ -49,7 +46,7 @@ data = BacktestDataConfig(
     bar_types=[base_bar_type],
     instrument_id=instrument_id,
     start_time=start_ns,
-    end_time=end_ns
+    end_time=end_ns,
 )
 
 engine = BacktestEngineConfig(
@@ -63,7 +60,7 @@ engine = BacktestEngineConfig(
         ),
     ],
     logging=LoggingConfig(log_level="ERROR"),
-    catalogs=[catalog_cfg]
+    catalogs=[catalog_cfg],
 )
 
 config = BacktestRunConfig(

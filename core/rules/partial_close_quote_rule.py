@@ -1,33 +1,40 @@
 from __future__ import annotations
+
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 from typing import Dict
-from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING
+
 import pandas as pd
+from nautilus_trader.model import Bar, QuoteTick
+from nautilus_trader.model.enums import OrderSide
+from nautilus_trader.model.identifiers import ClientOrderId, InstrumentId
 from nautilus_trader.model.instruments import Instrument
 from nautilus_trader.model.orders import Order
 from nautilus_trader.trading import Strategy
-from nautilus_trader.model.enums import OrderSide
-from nautilus_trader.model.identifiers import InstrumentId, ClientOrderId
-from nautilus_trader.model import QuoteTick, Bar
+
 from core import SharedState
 from core.constants import SharedDictKeyBase
 from core.rules.quote_tick_rule_base import QuoteTickRuleBase
 
+
 class PartialCloseQuoteRule(QuoteTickRuleBase):
-    def __init__(self, shared_state:SharedState,
-                 strategy:Strategy,
-                 instrument_id:InstrumentId,
-                 take_profit_percentage:float = 0.0,
-                 close_percentage:float = 100.0,
-                 max_partial_close_count:int = 1,
-                 use_fixed_tp_price:bool = False) -> None:
+    def __init__(
+        self,
+        shared_state: SharedState,
+        strategy: Strategy,
+        instrument_id: InstrumentId,
+        take_profit_percentage: float = 0.0,
+        close_percentage: float = 100.0,
+        max_partial_close_count: int = 1,
+        use_fixed_tp_price: bool = False,
+    ) -> None:
         super().__init__()
-        self.shared_state:SharedState = shared_state
-        self.strategy:Strategy = strategy
-        self.instrument_id:InstrumentId = instrument_id
-        self.take_profit_percentage:float = take_profit_percentage
-        self.close_percentage:float = close_percentage
-        self.max_partial_close_count:int = max_partial_close_count
-        self.use_fixed_tp_price:bool = use_fixed_tp_price
+        self.shared_state: SharedState = shared_state
+        self.strategy: Strategy = strategy
+        self.instrument_id: InstrumentId = instrument_id
+        self.take_profit_percentage: float = take_profit_percentage
+        self.close_percentage: float = close_percentage
+        self.max_partial_close_count: int = max_partial_close_count
+        self.use_fixed_tp_price: bool = use_fixed_tp_price
 
         self.__tps_base: Dict[ClientOrderId, float] = {}
         self.__partials_count: Dict[ClientOrderId, int] = {}
@@ -56,13 +63,13 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
         if not orders_list:
             return False
 
-        open_order_ids:set[ClientOrderId] = set()
+        open_order_ids: set[ClientOrderId] = set()
 
         for orders in orders_list:
-            entry_order:Order = orders.get(SharedDictKeyBase.ENTRY_ORDER)
-            order_id:ClientOrderId = entry_order.client_order_id
+            entry_order: Order = orders.get(SharedDictKeyBase.ENTRY_ORDER)
+            order_id: ClientOrderId = entry_order.client_order_id
             open_order_ids.add(order_id)
-            sl_order:Order = orders.get(SharedDictKeyBase.SL_ORDER)
+            sl_order: Order = orders.get(SharedDictKeyBase.SL_ORDER)
 
             avg_px = entry_order.avg_px
             if avg_px is None:
@@ -97,7 +104,9 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
             else:
                 # Compute current quantity after n partial closes (geometric model) and align DOWN to step
                 current_qty_dec_raw: Decimal = base_qty_dec * ((Decimal("1") - p_dec) ** partial_close_count)
-                current_qty_dec: Decimal = (current_qty_dec_raw / step_dec).to_integral_value(rounding=ROUND_FLOOR) * step_dec
+                current_qty_dec: Decimal = (current_qty_dec_raw / step_dec).to_integral_value(
+                    rounding=ROUND_FLOOR
+                ) * step_dec
 
                 # Split: take the next close as CEILING to step to ensure progress, remainder is exact difference
                 half_dec: Decimal = current_qty_dec * p_dec
@@ -113,10 +122,9 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
             next_close_quantity = instrument.make_qty(next_close_dec)
             remaining_quantity = instrument.make_qty(remaining_dec)
 
-            if not self.__execute_partial_close(next_close_quantity,
-                                        remaining_quantity,
-                                        sl_order.side,
-                                        sl_order.client_order_id):
+            if not self.__execute_partial_close(
+                next_close_quantity, remaining_quantity, sl_order.side, sl_order.client_order_id
+            ):
                 continue
 
             self.__partials_count[order_id] = self.__partials_count.get(order_id, 0) + 1
@@ -127,11 +135,7 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
         return True
 
     def __need_to_close(
-            self,
-            entry_order:Order,
-            lowest_price: float,
-            highest_price: float,
-            base_price: float
+        self, entry_order: Order, lowest_price: float, highest_price: float, base_price: float
     ) -> tuple[bool, float]:
         """
         Decide whether to trigger a partial close and return the decision plus the target level.
@@ -169,10 +173,13 @@ class PartialCloseQuoteRule(QuoteTickRuleBase):
 
         return False, 0
 
-    def __execute_partial_close(self, next_close_quantity:float,
-                                remaining_quantity:float,
-                                close_order_side:OrderSide,
-                                sl_order_id:ClientOrderId) -> bool:
+    def __execute_partial_close(
+        self,
+        next_close_quantity: float,
+        remaining_quantity: float,
+        close_order_side: OrderSide,
+        sl_order_id: ClientOrderId,
+    ) -> bool:
         try:
             order = self.strategy.order_factory.market(
                 instrument_id=self.instrument_id,

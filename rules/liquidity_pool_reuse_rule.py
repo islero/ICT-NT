@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import List, Optional
 
 from nautilus_trader.model import Bar
 from nautilus_trader.model.data import BarType
@@ -31,10 +31,12 @@ class LiquidityPoolReuseRuleConfig:
         before it becomes outdated.
     :type liquidity_pool_uses_count: int
     """
+
     bar_type: BarType
     instrument_id: InstrumentId
     turtle_bars_count: int
     liquidity_pool_uses_count: int  # the max number of times a pool can be used before its being outdated
+
 
 class LiquidityPoolReuseRule(RuleBase):
     """
@@ -88,9 +90,7 @@ class LiquidityPoolReuseRule(RuleBase):
             return True
 
         # Get the turtle soup signal direction
-        turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(
-            SharedDictKey.TURTLE_SOUP_RULE_SIGNAL
-        )
+        turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL)
 
         # If no signal, allow (nothing to filter)
         if turtle_soup_signal is None:
@@ -115,14 +115,10 @@ class LiquidityPoolReuseRule(RuleBase):
             bool: True if pool is fresh (not reused), False if pool is already used
         """
         # Get the lower pool price that triggered the Turtle Soup BUY signal
-        lower_pool: Optional[tuple[float, int]] = self.shared_state.get(
-            SharedDictKey.TURTLE_SOUP_USED_POOL
-        )
+        lower_pool: Optional[tuple[float, int]] = self.shared_state.get(SharedDictKey.TURTLE_SOUP_USED_POOL)
 
         if lower_pool is None:
-            self.strategy.log.warning(
-                "BUY signal: Cannot verify pool reuse - no lower pool price available"
-            )
+            self.strategy.log.warning("BUY signal: Cannot verify pool reuse - no lower pool price available")
             return False
 
         price, ts_init = lower_pool
@@ -176,14 +172,10 @@ class LiquidityPoolReuseRule(RuleBase):
             bool: True if pool is fresh (not reused), False if pool is already used
         """
         # Get the upper pool price that triggered the Turtle Soup SELL signal
-        upper_pool: Optional[tuple[float, int]] = self.shared_state.get(
-            SharedDictKey.TURTLE_SOUP_USED_POOL
-        )
+        upper_pool: Optional[tuple[float, int]] = self.shared_state.get(SharedDictKey.TURTLE_SOUP_USED_POOL)
 
         if upper_pool is None:
-            self.strategy.log.warning(
-                "SELL signal: Cannot verify pool reuse - no upper pool price available"
-            )
+            self.strategy.log.warning("SELL signal: Cannot verify pool reuse - no upper pool price available")
             return False
 
         price, ts_init = upper_pool

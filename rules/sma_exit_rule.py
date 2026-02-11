@@ -1,9 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 import pandas as pd
 from nautilus_trader.indicators import SimpleMovingAverage
-from nautilus_trader.model import BarType, Bar
+from nautilus_trader.model import Bar, BarType
 from nautilus_trader.model.enums import OrderSide
 from nautilus_trader.model.identifiers import InstrumentId
 from nautilus_trader.model.instruments import Instrument
@@ -18,6 +19,7 @@ from core.rules import RuleBase
 @dataclass
 class SMAExitRuleConfig:
     """Configuration for SMA exit rule."""
+
     bar_type: BarType  # BarType for the SMA calculation (default should be 30-minute bars)
     period: int = 10  # SMA period, default 10
     instrument_id: InstrumentId = None  # Instrument ID for creating close orders
@@ -150,9 +152,7 @@ class SMAExitRule(RuleBase):
             # Cancel the existing SL order since we're fully closing
             self.strategy.cancel_order(sl_order)
 
-            self.strategy.log.info(
-                f"SMAExitRule: Closed position - side={close_order_side}, qty={close_quantity}"
-            )
+            self.strategy.log.info(f"SMAExitRule: Closed position - side={close_order_side}, qty={close_quantity}")
 
             return True
         except Exception as exc:
@@ -179,7 +179,9 @@ class SMAExitRule(RuleBase):
             start_time = (now_ts - pd.Timedelta(days=89)).normalize()
 
             if self.is_backtest_mode:
-                self.strategy.request_aggregated_bars([self.config.bar_type], start=start_time, update_subscriptions=True)
+                self.strategy.request_aggregated_bars(
+                    [self.config.bar_type], start=start_time, update_subscriptions=True
+                )
             else:  # live trading mode
                 self.strategy.request_bars(self.config.bar_type, start=start_time, limit=1000)
 

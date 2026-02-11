@@ -2,17 +2,20 @@ from dataclasses import dataclass
 
 import pandas as pd
 from nautilus_trader.indicators import SimpleMovingAverage
-from nautilus_trader.model import BarType, Bar
+from nautilus_trader.model import Bar, BarType
 from nautilus_trader.trading import Strategy
+
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.constants import SharedDictKeyBase
 from core.enums import RuleSignal
 from core.rules import RuleBase
 
+
 @dataclass
 class SMAFilterRuleConfig:
     """Configuration for SMA filter rule."""
+
     bar_type: BarType  # BarType for the SMA calculation
     period: int = 50  # SMA period, default 50
 
@@ -84,7 +87,9 @@ class SMAFilterRule(RuleBase):
             start_time = (now_ts - pd.Timedelta(days=89)).normalize()
 
             if self.is_backtest_mode:
-                self.strategy.request_aggregated_bars([self.config.bar_type], start=start_time, update_subscriptions=True)
+                self.strategy.request_aggregated_bars(
+                    [self.config.bar_type], start=start_time, update_subscriptions=True
+                )
             else:  # live trading mode
                 self.strategy.request_bars(self.config.bar_type, start=start_time, limit=1000)
 

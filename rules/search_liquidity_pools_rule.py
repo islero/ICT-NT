@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import Dict, List
+
 import pandas as pd
 from nautilus_trader.core import Data
-from nautilus_trader.model import BarType, Bar
+from nautilus_trader.model import Bar, BarType
 from nautilus_trader.trading import Strategy
 from pandas import Timedelta
 
@@ -11,16 +12,19 @@ from core import SharedState
 from core.constants import SharedDictKeyBase
 from core.rules import RuleBase
 
+
 @dataclass
 class SearchLiquidityPoolsRuleConfig:
     """Configuration for searching liquidity pools rule."""
-    bar_type: BarType                       # target bar type to search the liquidity pools
-    upper_period_window: int                # the upper period window | 3 on 1D TF means the last 3 daily bars highs inclusive
-    lower_period_window: int                # the lower period window | 3 on 1D TF means the last 3 daily bars lows inclusive
-    lower_bar_type: BarType                 # lower timeframe bar type for data sufficiency check (e.g., 1h for daily, 1d for weekly)
+
+    bar_type: BarType  # target bar type to search the liquidity pools
+    upper_period_window: int  # the upper period window | 3 on 1D TF means the last 3 daily bars highs inclusive
+    lower_period_window: int  # the lower period window | 3 on 1D TF means the last 3 daily bars lows inclusive
+    lower_bar_type: BarType  # lower timeframe bar type for data sufficiency check (e.g., 1h for daily, 1d for weekly)
     time_delta: Timedelta
-    min_data_count: int = 3                 # minimum number of lower timeframe bars required
-    extremums_count: int = 1                # how many extremums to consider for the pool
+    min_data_count: int = 3  # minimum number of lower timeframe bars required
+    extremums_count: int = 1  # how many extremums to consider for the pool
+
 
 class SearchLiquidityPoolsRule(RuleBase):
     """
@@ -29,6 +33,7 @@ class SearchLiquidityPoolsRule(RuleBase):
     - "upper_liquidity_pools" for upper liquidity pools
     - "lower_liquidity_pools" for lower liquidity pools
     """
+
     def __init__(self, shared_state: SharedState, strategy: Strategy, config: SearchLiquidityPoolsRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
@@ -60,17 +65,21 @@ class SearchLiquidityPoolsRule(RuleBase):
         if not bars or len(bars) < min(self.config.upper_period_window, self.config.lower_period_window):
             return True
 
-        if self.config.upper_period_window ==  self.config.lower_period_window:
-            bars_slice = bars[:self.config.upper_period_window]
+        if self.config.upper_period_window == self.config.lower_period_window:
+            bars_slice = bars[: self.config.upper_period_window]
             upper_period_bars = bars_slice
             lower_period_bars = bars_slice
         else:
-            upper_period_bars = bars[:self.config.upper_period_window]
-            lower_period_bars = bars[:self.config.lower_period_window]
+            upper_period_bars = bars[: self.config.upper_period_window]
+            lower_period_bars = bars[: self.config.lower_period_window]
 
         # Filter bars that have sufficient data from a lower timeframe
-        upper_period_bars = [bars[i] for i in range(len(upper_period_bars)) if i == 0 or self._has_sufficient_data(bars[i])]
-        lower_period_bars = [bars[i] for i in range(len(lower_period_bars)) if i == 0 or self._has_sufficient_data(bars[i])]
+        upper_period_bars = [
+            bars[i] for i in range(len(upper_period_bars)) if i == 0 or self._has_sufficient_data(bars[i])
+        ]
+        lower_period_bars = [
+            bars[i] for i in range(len(lower_period_bars)) if i == 0 or self._has_sufficient_data(bars[i])
+        ]
 
         # Creating maps for upper and lower liquidity pools or getting them from the shared state
         uppers_map: Dict[str, List[tuple[float, int]]] = self.shared_state.get(SharedDictKey.UPPER_LIQUIDITY_POOLS, {})
@@ -81,8 +90,8 @@ class SearchLiquidityPoolsRule(RuleBase):
         lower_lows = [(float(b.low), b.ts_init) for b in lower_period_bars if b is not None]
 
         # Keep only the top extremums_count maximums in upper_highs and minimums in lower_lows
-        upper_highs = sorted(upper_highs, key=lambda x: x[0], reverse=True)[:self.config.extremums_count]
-        lower_lows = sorted(lower_lows, key=lambda x: x[0])[:self.config.extremums_count]
+        upper_highs = sorted(upper_highs, key=lambda x: x[0], reverse=True)[: self.config.extremums_count]
+        lower_lows = sorted(lower_lows, key=lambda x: x[0])[: self.config.extremums_count]
 
         # Saving the highs/lows for the selected bar type
         tf_key = str(self.config.bar_type.standard())
@@ -111,8 +120,9 @@ class SearchLiquidityPoolsRule(RuleBase):
             start_time = (now_ts - pd.Timedelta(days=89)).normalize()
 
             if self.is_backtest_mode:
-                self.strategy.request_aggregated_bars([self.config.bar_type], start=start_time,
-                                                      update_subscriptions=True)
+                self.strategy.request_aggregated_bars(
+                    [self.config.bar_type], start=start_time, update_subscriptions=True
+                )
             else:  # live trading mode
                 self.strategy.request_bars(self.config.bar_type, start=start_time, limit=1000)
 

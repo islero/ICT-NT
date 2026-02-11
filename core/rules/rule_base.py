@@ -1,17 +1,21 @@
 from abc import ABC, abstractmethod
-from typing import Optional, ClassVar, List
+from typing import ClassVar, List, Optional
+
 from nautilus_trader.core import Data
 from nautilus_trader.model import Bar, BarType, Quantity
 from nautilus_trader.model.enums import AggregationSource
 from nautilus_trader.trading import Strategy
+
 from core import SharedState
 from core.constants import SharedDictKeyBase
+
 
 class RuleBase(ABC):
     """
     Abstract base for all trading rules.
     Child classes must implement the `evaluate` method.
     """
+
     # Shared, process-wide backtest flag accessible by all subclasses
     is_backtest: ClassVar[bool] = False
 
@@ -38,6 +42,7 @@ class RuleBase(ABC):
         instance code more readable (e.g., `if self.is_backtest_mode:`).
         """
         return type(self).is_backtest
+
     def __init__(self, shared_state: Optional[SharedState] = None):
         self.shared_state = shared_state
 
@@ -69,7 +74,9 @@ class RuleBase(ABC):
         pass
 
     @staticmethod
-    def _calculate_not_full_bar(strategy: Strategy, bar_type: BarType, base_bar_type: BarType) -> tuple[Bar | None, Bar | None]:
+    def _calculate_not_full_bar(
+        strategy: Strategy, bar_type: BarType, base_bar_type: BarType
+    ) -> tuple[Bar | None, Bar | None]:
         """Build the current *not full* bar from base bars.
 
         Semantics (as requested): use **all** base bars with `ts_init >= bar_close_ts`,
@@ -132,8 +139,12 @@ class RuleBase(ABC):
         # `Quantity` construction kept consistent with existing code
         volume_q = Quantity.from_str(f"{volume_acc}")
 
-        bar_for_consolidation: Bar = Bar(bar_type, open_price, high_price, low_price, first.close, volume_q, bar.ts_event, bar.ts_init)
-        bar_for_indicator: Bar = Bar(bar_type, open_price, high_price, low_price, first.open, volume_q, bar.ts_event, bar.ts_init)
+        bar_for_consolidation: Bar = Bar(
+            bar_type, open_price, high_price, low_price, first.close, volume_q, bar.ts_event, bar.ts_init
+        )
+        bar_for_indicator: Bar = Bar(
+            bar_type, open_price, high_price, low_price, first.open, volume_q, bar.ts_event, bar.ts_init
+        )
 
         return bar_for_consolidation, bar_for_indicator
 

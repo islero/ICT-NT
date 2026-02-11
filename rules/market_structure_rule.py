@@ -20,6 +20,7 @@ class MarketStructureRuleConfig:
         bar_type: Optional BarType for detecting market structure.
                   If None, uses bar.bar_type from the incoming bar.
     """
+
     bar_type: Optional[BarType] = None
 
 
@@ -39,12 +40,7 @@ class MarketStructureRule(RuleBase):
     - MARKET_STRUCTURE_RULE_SIGNAL: The RuleSignal (BUY, SELL, or NONE)
     """
 
-    def __init__(
-        self,
-        shared_state: SharedState,
-        strategy: Strategy,
-        config: MarketStructureRuleConfig
-    ):
+    def __init__(self, shared_state: SharedState, strategy: Strategy, config: MarketStructureRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
         self.config = config

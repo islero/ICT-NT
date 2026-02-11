@@ -40,12 +40,13 @@ from nautilus_trader.trading import Strategy
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.rules.rule_base import RuleBase
+from indicators.fibonacci_levels import FibonacciLevels, PriceZone, TradeDirection
 from indicators.smart_pivot_points import SmartPivotPoints, Trend
-from indicators.fibonacci_levels import FibonacciLevels, TradeDirection, PriceZone
 
 
 class WeeklyStructure(Enum):
     """Weekly market structure classification."""
+
     NEUTRAL = "neutral"
     BULLISH = "bullish"
     BEARISH = "bearish"
@@ -53,6 +54,7 @@ class WeeklyStructure(Enum):
 
 class WeeklyZone(Enum):
     """Weekly price zone classification."""
+
     UNKNOWN = "unknown"
     DISCOUNT = "discount"
     PREMIUM = "premium"
@@ -70,6 +72,7 @@ class WeeklyContextRuleConfig:
         base_bar_type: Optional lower timeframe bar type for current price reference.
                        If provided, used to get current price for zone classification.
     """
+
     bar_type: Optional[BarType] = None
     base_bar_type: Optional[BarType] = None
 
@@ -107,12 +110,7 @@ class WeeklyContextRule(RuleBase):
         equilibrium: 50% level of Weekly dealing range
     """
 
-    def __init__(
-        self,
-        shared_state: SharedState,
-        strategy: Strategy,
-        config: WeeklyContextRuleConfig
-    ):
+    def __init__(self, shared_state: SharedState, strategy: Strategy, config: WeeklyContextRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
         self.config = config
@@ -241,11 +239,7 @@ class WeeklyContextRule(RuleBase):
             fib_direction = TradeDirection.BUY
 
         # Update Fibonacci levels
-        self.fibonacci_levels.update(
-            swing_low=major_low,
-            swing_high=major_high,
-            direction=fib_direction
-        )
+        self.fibonacci_levels.update(swing_low=major_low, swing_high=major_high, direction=fib_direction)
 
         # Extract key levels
         if self.fibonacci_levels.is_valid:

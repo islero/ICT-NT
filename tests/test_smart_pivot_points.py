@@ -9,8 +9,8 @@ These tests verify:
 5. Guard against false reversals
 """
 
-import sys
 import os
+import sys
 from unittest.mock import MagicMock
 
 import pytest
@@ -37,7 +37,7 @@ sys.modules["nautilus_trader.indicators.base"].Indicator = MockIndicator
 sys.modules["nautilus_trader.model.data"].Bar = MagicMock()
 
 # Ensure we can import from the project root
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Now we can import the indicator under test
 from indicators.smart_pivot_points import SmartPivotPoints, Trend
@@ -68,13 +68,7 @@ def _bars_from_hl(series: list[tuple[float, float]]) -> list[MockBar]:
     bars = []
     for i, (h, l) in enumerate(series):
         mid = (h + l) / 2
-        bars.append(MockBar(
-            open_price=mid,
-            high=h,
-            low=l,
-            close=mid,
-            ts_event=i * 1000
-        ))
+        bars.append(MockBar(open_price=mid, high=h, low=l, close=mid, ts_event=i * 1000))
     return bars
 
 
@@ -90,13 +84,7 @@ def _bars_from_ohlc(series: list[tuple[float, float, float, float]]) -> list[Moc
     """
     bars = []
     for i, (o, h, l, c) in enumerate(series):
-        bars.append(MockBar(
-            open_price=o,
-            high=h,
-            low=l,
-            close=c,
-            ts_event=i * 1000
-        ))
+        bars.append(MockBar(open_price=o, high=h, low=l, close=c, ts_event=i * 1000))
     return bars
 
 
@@ -138,13 +126,13 @@ class TestSmartPivotPointsUptrend:
         # Structure: Start range, break above (trend=1), pullback (HL), continue up (HH)
         prices = [
             # (open, high, low, close)
-            (97, 100, 95, 98),    # 0. Initial range
-            (98, 105, 97, 104),   # 1. Potential HH
-            (104, 106, 100, 106), # 2. Break above 105 -> UPTREND confirmed
+            (97, 100, 95, 98),  # 0. Initial range
+            (98, 105, 97, 104),  # 1. Potential HH
+            (104, 106, 100, 106),  # 2. Break above 105 -> UPTREND confirmed
             (106, 107, 99, 100),  # 3. Pullback (potential HL)
             (100, 103, 98, 102),  # 4. Continue pullback
-            (102, 108, 101, 107), # 5. Break above 107 confirms HL, new HH
-            (107, 110, 104, 109), # 6. Continue up - HH progression
+            (102, 108, 101, 107),  # 5. Break above 107 confirms HL, new HH
+            (107, 110, 104, 109),  # 6. Continue up - HH progression
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -183,11 +171,11 @@ class TestSmartPivotPointsDowntrend:
             # (open, high, low, close)
             (107, 110, 105, 108),  # 0. Initial range
             (108, 108, 102, 103),  # 1. Drop
-            (103, 105, 100, 99),   # 2. Break below 102 -> DOWNTREND confirmed
-            (99, 106, 99, 105),    # 3. Pullback (potential LH)
+            (103, 105, 100, 99),  # 2. Break below 102 -> DOWNTREND confirmed
+            (99, 106, 99, 105),  # 3. Pullback (potential LH)
             (105, 107, 101, 102),  # 4. Continue pullback
-            (102, 103, 95, 96),    # 5. Break below 99 confirms LH, new LL
-            (96, 100, 92, 93),     # 6. Continue down - LL progression
+            (102, 103, 95, 96),  # 5. Break below 99 confirms LH, new LL
+            (96, 100, 92, 93),  # 6. Continue down - LL progression
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -222,15 +210,15 @@ class TestSmartPivotPointsHLStability:
 
         # First establish uptrend clearly
         setup_prices = [
-            (97, 100, 95, 98),    # 0. Initial range
-            (98, 101, 96, 100),   # 1. Inside
+            (97, 100, 95, 98),  # 0. Initial range
+            (98, 101, 96, 100),  # 1. Inside
             (100, 106, 98, 105),  # 2. Break above -> UPTREND
         ]
 
         # Now add HL-stability sequence (pullback without trend flip)
         hl_stability_prices = [
             (105, 106, 100, 101),  # 3. Pullback starts (potential HL forming)
-            (101, 104, 99, 103),   # 4. Deeper pullback - still should be HL candidate
+            (101, 104, 99, 103),  # 4. Deeper pullback - still should be HL candidate
             (103, 107, 101, 106),  # 5. Resume uptrend, break above -> confirms HL
             (106, 109, 103, 108),  # 6. Continuation higher
         ]
@@ -277,8 +265,8 @@ class TestSmartPivotPointsLHStability:
         lh_stability_prices = [
             (101, 107, 100, 106),  # 3. Bounce starts (potential LH forming)
             (106, 109, 103, 105),  # 4. Higher bounce - still should be LH candidate
-            (105, 106, 99, 100),   # 5. Resume downtrend, break below -> confirms LH
-            (100, 103, 96, 97),    # 6. Continuation lower
+            (105, 106, 99, 100),  # 5. Resume downtrend, break below -> confirms LH
+            (100, 103, 96, 97),  # 6. Continuation lower
         ]
 
         all_prices = setup_prices + lh_stability_prices
@@ -309,8 +297,8 @@ class TestSmartPivotPointsFalseReversals:
 
         # Establish strong uptrend
         prices = [
-            (97, 100, 95, 98),     # 0. Initial range
-            (98, 102, 97, 101),    # 1. Push up
+            (97, 100, 95, 98),  # 0. Initial range
+            (98, 102, 97, 101),  # 1. Push up
             (101, 107, 100, 106),  # 2. Break above -> UPTREND
             (106, 110, 104, 109),  # 3. Strong HH
             (109, 111, 107, 110),  # 4. Continue HH
@@ -348,17 +336,17 @@ class TestSmartPivotPointsFalseReversals:
         prices = [
             (107, 110, 105, 108),  # 0. Initial range
             (108, 109, 103, 104),  # 1. Push down
-            (104, 105, 98, 99),    # 2. Break below -> DOWNTREND
-            (99, 100, 94, 95),     # 3. Strong LL
-            (95, 96, 91, 92),      # 4. Continue LL
+            (104, 105, 98, 99),  # 2. Break below -> DOWNTREND
+            (99, 100, 94, 95),  # 3. Strong LL
+            (95, 96, 91, 92),  # 4. Continue LL
         ]
 
         # Add bounce that should NOT trigger reversal
         # (rallies but doesn't close above the major high)
         bounce_prices = [
-            (92, 100, 91, 99),     # 5. Bounce - wick high but close below
-            (99, 102, 98, 100),    # 6. Higher bounce
-            (100, 101, 95, 96),    # 7. Resume downward
+            (92, 100, 91, 99),  # 5. Bounce - wick high but close below
+            (99, 102, 98, 100),  # 6. Higher bounce
+            (100, 101, 95, 96),  # 7. Resume downward
         ]
 
         all_prices = prices + bounce_prices
@@ -399,9 +387,9 @@ class TestSmartPivotPointsMajorStructure:
         indicator = SmartPivotPoints()
 
         prices = [
-            (97, 100, 95, 98),     # 0. Initial range, major_low=95
-            (98, 101, 96, 100),    # 1. Inside
-            (100, 106, 99, 105),   # 2. Break above 100 -> UPTREND
+            (97, 100, 95, 98),  # 0. Initial range, major_low=95
+            (98, 101, 96, 100),  # 1. Inside
+            (100, 106, 99, 105),  # 2. Break above 100 -> UPTREND
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -421,7 +409,7 @@ class TestSmartPivotPointsSignals:
         prices = [
             (107, 110, 105, 108),  # 0. Initial range
             (108, 109, 103, 104),  # 1. Drop
-            (104, 105, 98, 99),    # 2. Break below -> DOWNTREND, signals new_major_high
+            (104, 105, 98, 99),  # 2. Break below -> DOWNTREND, signals new_major_high
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -442,9 +430,9 @@ class TestSmartPivotPointsSignals:
         indicator = SmartPivotPoints()
 
         prices = [
-            (97, 100, 95, 98),     # 0. Initial range
-            (98, 101, 96, 100),    # 1. Push up
-            (100, 106, 99, 105),   # 2. Break above -> UPTREND, signals new_major_low
+            (97, 100, 95, 98),  # 0. Initial range
+            (98, 101, 96, 100),  # 1. Push up
+            (100, 106, 99, 105),  # 2. Break above -> UPTREND, signals new_major_low
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -509,22 +497,20 @@ class TestSmartPivotPointsDeepPullbackBOS:
 
         prices = [
             # Initialization phase
-            (100, 105, 95, 100),   # 0. Initial Range
-            (100, 102, 90, 92),    # 1. Drop, creates Low 90
-            (92, 95, 91, 93),      # 2. Inside bar
-            (93, 93, 80, 80),      # 3. BREAK DOWN (Close 80 < 90). Trend -> DOWN (-1)
-
+            (100, 105, 95, 100),  # 0. Initial Range
+            (100, 102, 90, 92),  # 1. Drop, creates Low 90
+            (92, 95, 91, 93),  # 2. Inside bar
+            (93, 93, 80, 80),  # 3. BREAK DOWN (Close 80 < 90). Trend -> DOWN (-1)
             # Deep Pullback Phase
-            (80, 85, 80, 85),      # 4. Pullback start
-            (85, 95, 85, 95),      # 5. Deep Pullback to 95. Candidate LH = 95
-            (95, 96, 94, 94),      # 6. Higher internal high (96). Candidate LH = 96
-            (94, 94, 88, 88),      # 7. Internal low
-            (88, 92, 88, 90),      # 8. Another lower high (92) internally
-
+            (80, 85, 80, 85),  # 4. Pullback start
+            (85, 95, 85, 95),  # 5. Deep Pullback to 95. Candidate LH = 95
+            (95, 96, 94, 94),  # 6. Higher internal high (96). Candidate LH = 96
+            (94, 94, 88, 88),  # 7. Internal low
+            (88, 92, 88, 90),  # 8. Another lower high (92) internally
             # Continuation / BOS
-            (90, 90, 75, 75),      # 9. CRASH to 75. Breaks Major Low (80)
-                                   #    EXPECTATION: Confirm 96 as New Major High (LH)
-                                   #    New Major Low = 75
+            (90, 90, 75, 75),  # 9. CRASH to 75. Breaks Major Low (80)
+            #    EXPECTATION: Confirm 96 as New Major High (LH)
+            #    New Major Low = 75
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -560,22 +546,20 @@ class TestSmartPivotPointsDeepPullbackBOS:
 
         prices = [
             # Initialization phase
-            (100, 105, 95, 100),   # 0. Initial Range
-            (100, 110, 98, 108),   # 1. Push up, creates High 110
+            (100, 105, 95, 100),  # 0. Initial Range
+            (100, 110, 98, 108),  # 1. Push up, creates High 110
             (108, 109, 105, 107),  # 2. Inside bar
             (107, 120, 107, 120),  # 3. BREAK UP (Close 120 > 110). Trend -> UP (1)
-
             # Deep Pullback Phase
             (120, 120, 115, 115),  # 4. Pullback start
             (115, 116, 105, 105),  # 5. Deep Pullback to 105. Candidate HL = 105
             (105, 106, 104, 106),  # 6. Lower internal low (104). Candidate HL = 104
             (106, 112, 106, 112),  # 7. Internal high
             (112, 113, 108, 110),  # 8. Another higher low internally
-
             # Continuation / BOS
             (110, 125, 110, 125),  # 9. BREAKOUT to 125. Breaks Major High (120)
-                                   #    EXPECTATION: Confirm 104 as New Major Low (HL)
-                                   #    New Major High = 125
+            #    EXPECTATION: Confirm 104 as New Major Low (HL)
+            #    New Major High = 125
         ]
 
         bars = _bars_from_ohlc(prices)

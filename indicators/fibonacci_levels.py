@@ -24,6 +24,7 @@ from nautilus_trader.indicators.base import Indicator
 
 class TradeDirection(Enum):
     """Trade direction for Fibonacci orientation."""
+
     NONE = 0
     BUY = 1
     SELL = -1
@@ -31,17 +32,19 @@ class TradeDirection(Enum):
 
 class PriceZone(Enum):
     """Price zone classification relative to Fibonacci levels."""
+
     UNKNOWN = "unknown"
-    DEEP_DISCOUNT = "deep_discount"      # Below 79% retracement (most favorable for BUY)
-    DISCOUNT = "discount"                 # 50%-79% retracement (favorable for BUY)
-    EQUILIBRIUM = "equilibrium"           # Around 50% level
-    PREMIUM = "premium"                   # 21%-50% retracement (favorable for SELL)
-    DEEP_PREMIUM = "deep_premium"         # Above 21% retracement (most favorable for SELL)
+    DEEP_DISCOUNT = "deep_discount"  # Below 79% retracement (most favorable for BUY)
+    DISCOUNT = "discount"  # 50%-79% retracement (favorable for BUY)
+    EQUILIBRIUM = "equilibrium"  # Around 50% level
+    PREMIUM = "premium"  # 21%-50% retracement (favorable for SELL)
+    DEEP_PREMIUM = "deep_premium"  # Above 21% retracement (most favorable for SELL)
 
 
 @dataclass
 class FibonacciLevel:
     """Represents a single Fibonacci level with price and percentage."""
+
     percentage: float  # 0.0 to 1.0
     price: float
     label: str
@@ -113,12 +116,7 @@ class FibonacciLevels(Indicator):
         # Flag for valid calculation
         self._is_valid: bool = False
 
-    def update(
-        self,
-        swing_low: float,
-        swing_high: float,
-        direction: TradeDirection
-    ) -> None:
+    def update(self, swing_low: float, swing_high: float, direction: TradeDirection) -> None:
         """
         Update Fibonacci levels with new swing range and direction.
 

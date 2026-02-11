@@ -12,8 +12,8 @@ These tests verify:
 8. Correct middleCandleTime and distancePercent
 """
 
-import sys
 import os
+import sys
 from unittest.mock import MagicMock
 
 import pytest
@@ -40,7 +40,7 @@ sys.modules["nautilus_trader.indicators.base"].Indicator = MockIndicator
 sys.modules["nautilus_trader.model.data"].Bar = MagicMock()
 
 # Ensure we can import from the project root
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Now import the indicator under test
 from indicators.fair_value_gap import FairValueGap, FvgDirection, FvgRecord
@@ -77,13 +77,15 @@ def _bars_from_ohlc(series: list[tuple[float, float, float, float]], start_ts: i
     """
     bars = []
     for i, (o, h, l, c) in enumerate(series):
-        bars.append(MockBar(
-            open_price=o,
-            high=h,
-            low=l,
-            close=c,
-            ts_event=start_ts + i * 1000,
-        ))
+        bars.append(
+            MockBar(
+                open_price=o,
+                high=h,
+                low=l,
+                close=c,
+                ts_event=start_ts + i * 1000,
+            )
+        )
     return bars
 
 
@@ -121,7 +123,7 @@ class TestBullishFvgDetection:
 
         # c1.high=100, c2 in between, c3.low=102 -> gap up
         prices = [
-            (95, 100, 90, 98),   # c1: high=100
+            (95, 100, 90, 98),  # c1: high=100
             (99, 105, 97, 104),  # c2: middle candle
             (103, 110, 102, 108),  # c3: low=102 > c1.high=100 -> bullish FVG
         ]
@@ -147,7 +149,7 @@ class TestBullishFvgDetection:
 
         # Create a larger gap for clearer calculation
         prices = [
-            (95, 100, 90, 98),   # c1: high=100
+            (95, 100, 90, 98),  # c1: high=100
             (105, 115, 103, 112),  # c2
             (112, 120, 110, 118),  # c3: low=110 -> gap = 110 - 100 = 10
         ]
@@ -186,8 +188,8 @@ class TestBearishFvgDetection:
         # c1.low=100, c2 in between, c3.high=98 -> gap down
         prices = [
             (105, 110, 100, 102),  # c1: low=100
-            (101, 103, 95, 96),    # c2: middle candle
-            (95, 98, 90, 92),      # c3: high=98 < c1.low=100 -> bearish FVG
+            (101, 103, 95, 96),  # c2: middle candle
+            (95, 98, 90, 92),  # c3: high=98 < c1.low=100 -> bearish FVG
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -201,7 +203,7 @@ class TestBearishFvgDetection:
 
         assert fvg is not None
         assert fvg.direction == FvgDirection.BEARISH
-        assert fvg.fvg_low == 98.0   # c3.high
+        assert fvg.fvg_low == 98.0  # c3.high
         assert fvg.fvg_high == 100.0  # c1.low
 
     def test_bearish_fvg_gap_size(self):
@@ -211,8 +213,8 @@ class TestBearishFvgDetection:
         # Create a larger gap for clearer calculation
         prices = [
             (115, 120, 110, 112),  # c1: low=110
-            (108, 109, 95, 96),    # c2
-            (94, 100, 88, 92),     # c3: high=100 -> gap = 110 - 100 = 10
+            (108, 109, 95, 96),  # c2
+            (94, 100, 88, 92),  # c3: high=100 -> gap = 110 - 100 = 10
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -243,7 +245,7 @@ class TestNoFvgDetection:
 
         # Overlapping candles - no gap
         prices = [
-            (95, 105, 90, 100),   # c1: high=105, low=90
+            (95, 105, 90, 100),  # c1: high=105, low=90
             (100, 108, 95, 102),  # c2
             (102, 110, 100, 106),  # c3: low=100 <= c1.high=105, high=110 >= c1.low=90
         ]
@@ -264,7 +266,7 @@ class TestNoFvgDetection:
 
         # Bullish touch: c1.high == c3.low
         prices = [
-            (95, 100, 90, 98),   # c1: high=100
+            (95, 100, 90, 98),  # c1: high=100
             (99, 105, 97, 104),  # c2
             (101, 108, 100, 106),  # c3: low=100 == c1.high=100 -> no gap
         ]
@@ -282,8 +284,8 @@ class TestNoFvgDetection:
         # Bearish touch: c1.low == c3.high
         prices = [
             (105, 110, 100, 102),  # c1: low=100
-            (101, 103, 95, 96),    # c2
-            (95, 100, 90, 92),     # c3: high=100 == c1.low=100 -> no gap
+            (101, 103, 95, 96),  # c2
+            (95, 100, 90, 92),  # c3: high=100 == c1.low=100 -> no gap
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -298,8 +300,8 @@ class TestNoFvgDetection:
 
         # Normal market movement with overlapping candles
         prices = [
-            (100, 102, 98, 101),   # c1
-            (101, 103, 99, 102),   # c2
+            (100, 102, 98, 101),  # c1
+            (101, 103, 99, 102),  # c2
             (102, 104, 100, 103),  # c3: overlaps with c1
         ]
 
@@ -319,8 +321,8 @@ class TestMinDistanceFilter:
         indicator = FairValueGap(min_distance_percent=2.0)
 
         prices = [
-            (95, 100, 90, 98),     # c1: high=100
-            (99, 105, 97, 104),    # c2
+            (95, 100, 90, 98),  # c1: high=100
+            (99, 105, 97, 104),  # c2
             (103, 110, 102, 108),  # c3: low=102 -> gap = 2, distance ≈ 1.98%
         ]
 
@@ -337,7 +339,7 @@ class TestMinDistanceFilter:
         # Larger gap that should pass
         # gap = 110 - 100 = 10, mid = 105, distance ≈ 9.52%
         prices = [
-            (95, 100, 90, 98),     # c1: high=100
+            (95, 100, 90, 98),  # c1: high=100
             (105, 115, 103, 112),  # c2
             (112, 120, 110, 118),  # c3: low=110 -> gap = 10, distance ≈ 9.52%
         ]
@@ -355,7 +357,7 @@ class TestMinDistanceFilter:
         indicator = FairValueGap(min_distance_percent=4.0)
 
         prices = [
-            (95, 100, 90, 98),     # c1: high=100
+            (95, 100, 90, 98),  # c1: high=100
             (103, 108, 101, 106),  # c2
             (106, 112, 105, 110),  # c3: low=105 -> gap = 5
         ]
@@ -392,10 +394,9 @@ class TestMultipleFvgs:
         indicator = FairValueGap()
 
         prices = [
-            (95, 100, 90, 98),     # c1 for first FVG
-            (99, 105, 97, 104),    # c2 for first FVG
+            (95, 100, 90, 98),  # c1 for first FVG
+            (99, 105, 97, 104),  # c2 for first FVG
             (103, 110, 102, 108),  # c3 for first FVG -> bullish FVG #1
-
             (107, 112, 105, 110),  # c1 for second FVG
             (110, 118, 108, 116),  # c2 for second FVG
             (115, 125, 114, 122),  # c3 for second FVG -> bullish FVG #2 (c1.high=112 < c3.low=114)
@@ -418,12 +419,11 @@ class TestMultipleFvgs:
         prices = [
             (115, 120, 110, 112),  # c1: low=110
             (108, 109, 100, 101),  # c2: high=109, low=100
-            (99, 105, 88, 92),     # c3: high=105 < c1.low=110 -> bearish FVG #1
-
+            (99, 105, 88, 92),  # c3: high=105 < c1.low=110 -> bearish FVG #1
             # Bars 4-6: ensure bar 2's low=100 is NOT > bar 4's high
-            (91, 102, 85, 88),     # c1: low=85, high=102 > bar2.low=100, no gap with bar 2
-            (87, 90, 78, 80),      # c2: high=90
-            (78, 82, 70, 72),      # c3: high=82 < c1.low=85 -> bearish FVG #2
+            (91, 102, 85, 88),  # c1: low=85, high=102 > bar2.low=100, no gap with bar 2
+            (87, 90, 78, 80),  # c2: high=90
+            (78, 82, 70, 72),  # c3: high=82 < c1.low=85 -> bearish FVG #2
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -440,22 +440,20 @@ class TestMultipleFvgs:
         # Carefully designed to have exactly 2 FVGs: 1 bullish then 1 bearish
         prices = [
             # Bullish FVG (bars 1-3)
-            (95, 100, 90, 98),     # c1: high=100
-            (99, 105, 97, 104),    # c2
+            (95, 100, 90, 98),  # c1: high=100
+            (99, 105, 97, 104),  # c2
             (103, 110, 102, 108),  # c3: low=102 > c1.high=100 -> bullish FVG
-
             # Continuation with overlapping bars (no FVG)
             # Ensure: bar 2's high=105 is NOT < bar 4's low (need low <= 105)
             # Ensure: bar 3's low=102 is NOT > bar 5's high (need high >= 102)
             (107, 112, 103, 108),  # c1: high=112, low=103 (bar2.high=105 < low=103? No, 105<103 false)
             (108, 115, 106, 110),  # c2: high=115, low=106 (bar3.low=102 > high=115? No)
             (109, 114, 107, 112),  # c3: overlap with both, no FVG
-
             # Bearish FVG (bars 7-9)
             # Ensure: bar 6's low=107 > bar 8's high
             (111, 115, 108, 110),  # c1: low=108
             (107, 109, 100, 102),  # c2: high=109 (bar6.low=107 > high=109? No)
-            (99, 105, 92, 94),     # c3: high=105 < c1.low=108 -> bearish FVG
+            (99, 105, 92, 94),  # c3: high=105 < c1.low=108 -> bearish FVG
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -474,8 +472,8 @@ class TestBarAssociation:
         indicator = FairValueGap()
 
         prices = [
-            (95, 100, 90, 98),     # c1
-            (99, 105, 97, 104),    # c2
+            (95, 100, 90, 98),  # c1
+            (99, 105, 97, 104),  # c2
             (103, 110, 102, 108),  # c3
         ]
 
@@ -499,8 +497,8 @@ class TestBarAssociation:
 
         prices = [
             (115, 120, 110, 112),  # c1
-            (108, 109, 95, 96),    # c2
-            (94, 100, 88, 92),     # c3
+            (108, 109, 95, 96),  # c2
+            (94, 100, 88, 92),  # c3
         ]
 
         bars = _bars_from_ohlc(prices, start_ts=5000)
@@ -541,11 +539,13 @@ class TestEdgeCases:
         """FVG should be detected on exactly the 3rd bar."""
         indicator = FairValueGap()
 
-        bars = _bars_from_ohlc([
-            (95, 100, 90, 98),
-            (99, 105, 97, 104),
-            (103, 110, 102, 108),  # 3rd bar - FVG detected here
-        ])
+        bars = _bars_from_ohlc(
+            [
+                (95, 100, 90, 98),
+                (99, 105, 97, 104),
+                (103, 110, 102, 108),  # 3rd bar - FVG detected here
+            ]
+        )
 
         _feed_bars(indicator, bars)
         assert len(indicator.fvgs) == 1
@@ -594,11 +594,14 @@ class TestMiddleCandleTime:
         """Verify middleCandleTime is c2.ts_event for bullish FVG."""
         indicator = FairValueGap()
 
-        bars = _bars_from_ohlc([
-            (95, 100, 90, 98),
-            (99, 105, 97, 104),
-            (103, 110, 102, 108),
-        ], start_ts=10000)
+        bars = _bars_from_ohlc(
+            [
+                (95, 100, 90, 98),
+                (99, 105, 97, 104),
+                (103, 110, 102, 108),
+            ],
+            start_ts=10000,
+        )
 
         _feed_bars(indicator, bars)
 
@@ -610,11 +613,14 @@ class TestMiddleCandleTime:
         """Verify middleCandleTime is c2.ts_event for bearish FVG."""
         indicator = FairValueGap()
 
-        bars = _bars_from_ohlc([
-            (115, 120, 110, 112),
-            (108, 109, 95, 96),
-            (94, 100, 88, 92),
-        ], start_ts=20000)
+        bars = _bars_from_ohlc(
+            [
+                (115, 120, 110, 112),
+                (108, 109, 95, 96),
+                (94, 100, 88, 92),
+            ],
+            start_ts=20000,
+        )
 
         _feed_bars(indicator, bars)
 
@@ -634,7 +640,7 @@ class TestDistancePercent:
         # mid = (105 + 100) / 2 = 102.5
         # distance_percent = (5 / 102.5) * 100 ≈ 4.878%
         prices = [
-            (95, 100, 90, 98),     # c1: high=100
+            (95, 100, 90, 98),  # c1: high=100
             (103, 108, 101, 106),  # c2
             (106, 112, 105, 110),  # c3: low=105
         ]
@@ -657,8 +663,8 @@ class TestDistancePercent:
         # distance_percent = (5 / 102.5) * 100 ≈ 4.878%
         prices = [
             (108, 112, 105, 107),  # c1: low=105
-            (104, 106, 95, 96),    # c2
-            (94, 100, 90, 92),     # c3: high=100
+            (104, 106, 95, 96),  # c2
+            (94, 100, 90, 92),  # c3: high=100
         ]
 
         bars = _bars_from_ohlc(prices)
@@ -705,11 +711,13 @@ class TestReset:
         indicator = FairValueGap()
 
         # First detection
-        bars1 = _bars_from_ohlc([
-            (95, 100, 90, 98),
-            (99, 105, 97, 104),
-            (103, 110, 102, 108),
-        ])
+        bars1 = _bars_from_ohlc(
+            [
+                (95, 100, 90, 98),
+                (99, 105, 97, 104),
+                (103, 110, 102, 108),
+            ]
+        )
         _feed_bars(indicator, bars1)
         assert len(indicator.fvgs) == 1
 
@@ -717,11 +725,14 @@ class TestReset:
         indicator.reset()
 
         # New detection after reset
-        bars2 = _bars_from_ohlc([
-            (115, 120, 110, 112),
-            (108, 109, 95, 96),
-            (94, 100, 88, 92),
-        ], start_ts=5000)
+        bars2 = _bars_from_ohlc(
+            [
+                (115, 120, 110, 112),
+                (108, 109, 95, 96),
+                (94, 100, 88, 92),
+            ],
+            start_ts=5000,
+        )
         _feed_bars(indicator, bars2)
 
         # Should only have the new FVG
@@ -752,12 +763,14 @@ class TestProperties:
         """Verify has_new_fvg is True only on the bar where FVG is detected."""
         indicator = FairValueGap()
 
-        bars = _bars_from_ohlc([
-            (95, 100, 90, 98),
-            (99, 105, 97, 104),
-            (103, 110, 102, 108),  # FVG detected here
-            (107, 112, 105, 110),  # No new FVG
-        ])
+        bars = _bars_from_ohlc(
+            [
+                (95, 100, 90, 98),
+                (99, 105, 97, 104),
+                (103, 110, 102, 108),  # FVG detected here
+                (107, 112, 105, 110),  # No new FVG
+            ]
+        )
 
         indicator.handle_bar(bars[0])
         assert indicator.has_new_fvg is False
@@ -786,8 +799,8 @@ class TestSlidingWindow:
 
         # Sequence where both (1,2,3) and (2,3,4) could be FVGs
         prices = [
-            (95, 100, 90, 98),     # 1: high=100
-            (99, 105, 97, 104),    # 2: high=105
+            (95, 100, 90, 98),  # 1: high=100
+            (99, 105, 97, 104),  # 2: high=105
             (103, 110, 102, 108),  # 3: low=102 > bar1.high=100 -> FVG #1
             (107, 115, 107, 113),  # 4: low=107 > bar2.high=105 -> FVG #2
         ]

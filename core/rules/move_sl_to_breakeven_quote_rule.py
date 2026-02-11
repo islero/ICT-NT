@@ -1,19 +1,22 @@
 from __future__ import annotations
+
 from typing import Dict
+
+from nautilus_trader.model import Bar, QuoteTick
+from nautilus_trader.model.identifiers import ClientOrderId, InstrumentId
 from nautilus_trader.model.instruments import Instrument
 from nautilus_trader.model.orders import Order
 from nautilus_trader.trading import Strategy
-from nautilus_trader.model import Bar, QuoteTick
-from nautilus_trader.model.identifiers import ClientOrderId, InstrumentId
-from core.rules.quote_tick_rule_base import QuoteTickRuleBase
-from core.constants import SharedDictKeyBase
+
 from core import SharedState
+from core.constants import SharedDictKeyBase
+from core.rules.quote_tick_rule_base import QuoteTickRuleBase
+
 
 class MoveStopLossToBreakevenQuoteRule(QuoteTickRuleBase):
-    def __init__(self, shared_state: SharedState,
-                 strategy: Strategy,
-                 instrument_id: InstrumentId,
-                 take_profit_percentage: float) -> None:
+    def __init__(
+        self, shared_state: SharedState, strategy: Strategy, instrument_id: InstrumentId, take_profit_percentage: float
+    ) -> None:
         super().__init__()
         self.shared_state: SharedState = shared_state
         self.strategy: Strategy = strategy
@@ -49,11 +52,11 @@ class MoveStopLossToBreakevenQuoteRule(QuoteTickRuleBase):
         open_order_ids: set[ClientOrderId] = set()
 
         for orders in orders_list:
-            entry_order:Order = orders.get(SharedDictKeyBase.ENTRY_ORDER)
-            order_id:ClientOrderId = entry_order.client_order_id
+            entry_order: Order = orders.get(SharedDictKeyBase.ENTRY_ORDER)
+            order_id: ClientOrderId = entry_order.client_order_id
             open_order_ids.add(order_id)
 
-            moved_to_be:bool = self.__moved_to_be.get(order_id, False)
+            moved_to_be: bool = self.__moved_to_be.get(order_id, False)
 
             if moved_to_be:
                 continue
@@ -64,7 +67,7 @@ class MoveStopLossToBreakevenQuoteRule(QuoteTickRuleBase):
                 continue
 
             sl_order: Order = orders.get(SharedDictKeyBase.SL_ORDER)
-            sl_order_id:ClientOrderId = sl_order.client_order_id
+            sl_order_id: ClientOrderId = sl_order.client_order_id
 
             updated_sl_order = self.strategy.cache.order(sl_order_id)
             if updated_sl_order is None:
@@ -85,11 +88,8 @@ class MoveStopLossToBreakevenQuoteRule(QuoteTickRuleBase):
         return True
 
     def __need_to_move_to_be(
-            self,
-            entry_order:Order,
-            lowest_price: float,
-            highest_price: float,
-            entry_price: float) -> bool:
+        self, entry_order: Order, lowest_price: float, highest_price: float, entry_price: float
+    ) -> bool:
         percentage = self.take_profit_percentage / 100
         if not entry_order.is_closed:
             return False

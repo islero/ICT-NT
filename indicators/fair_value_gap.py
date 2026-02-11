@@ -10,6 +10,7 @@ from nautilus_trader.model.data import Bar
 
 class FvgDirection(Enum):
     """Direction of a Fair Value Gap."""
+
     BULLISH = "bullish"
     BEARISH = "bearish"
 
@@ -29,6 +30,7 @@ class FvgRecord:
         middle_candle_time: Timestamp of the middle candle (c2.ts_event).
         direction: Bullish or bearish FVG.
     """
+
     c1: Bar
     c2: Bar
     c3: Bar

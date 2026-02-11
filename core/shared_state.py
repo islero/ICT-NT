@@ -1,13 +1,15 @@
 # shared_state.py
 from __future__ import annotations
+
+import json
 from dataclasses import dataclass, field
+from datetime import date, datetime, time
+from decimal import Decimal
 from enum import Enum
+from pathlib import Path
 from threading import RLock
 from typing import Any, Dict, Iterable, Mapping, Optional
-import json
-from decimal import Decimal
-from datetime import datetime, date, time
-from pathlib import Path
+
 
 @dataclass
 class SharedState:
@@ -18,6 +20,7 @@ class SharedState:
     - Provides small helpers (set_flag, clear_keys, snapshot) to reduce boilerplate.
     - Optional thread-safety via RLock (useful if you later introduce concurrency).
     """
+
     _data_dict: Dict[str, Any] = field(default_factory=dict)
     _lock: Optional[RLock] = field(default_factory=RLock)
 
@@ -190,6 +193,7 @@ class SharedState:
         by `load_from_redis` via a pickle fallback.
         """
         import redis
+
         # Take a snapshot and convert to JSON-safe structure to avoid pickle errors
         data = self.snapshot()
         safe = self._to_jsonable(data)
@@ -244,6 +248,7 @@ class SharedState:
         except Exception:
             # Fallback to legacy pickle payloads if any exist
             import pickle
+
             data = pickle.loads(raw)
 
         if not isinstance(data, dict):
@@ -287,7 +292,10 @@ class SharedState:
         timeout : float | None
             Optional socket timeout for the Redis client.
         """
-        import redis, json
+        import json
+
+        import redis
+
         client = redis.Redis(host=host, port=port, db=db, password=password, socket_timeout=timeout)
         raw = client.get(key)
         if raw is None:
@@ -300,6 +308,7 @@ class SharedState:
         except Exception:
             # Fallback to legacy pickle payloads if any exist
             import pickle
+
             data = pickle.loads(raw)
 
         if not isinstance(data, dict):
@@ -314,6 +323,7 @@ class SharedState:
             self._data_dict.clear()
             self._data_dict.update(data)
         return True
+
 
 def _key_of(key: Any) -> str:
     """

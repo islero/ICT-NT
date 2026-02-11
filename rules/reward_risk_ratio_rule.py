@@ -19,6 +19,7 @@ class RewardRiskRatioRuleConfig:
     Parameters:
         reward_risk_ratio: Minimum required reward to risk ratio (default: 2.0 means 2:1)
     """
+
     reward_risk_ratio: float = 2.0
 
 
@@ -39,12 +40,7 @@ class RewardRiskRatioRule(RuleBase):
     The rule only passes if the calculated ratio >= configured reward_risk_ratio.
     """
 
-    def __init__(
-        self,
-        shared_state: SharedState,
-        strategy: Strategy,
-        config: RewardRiskRatioRuleConfig
-    ):
+    def __init__(self, shared_state: SharedState, strategy: Strategy, config: RewardRiskRatioRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
         self.config = config
@@ -65,9 +61,7 @@ class RewardRiskRatioRule(RuleBase):
             return False
 
         # Get the turtle soup signal direction
-        turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(
-            SharedDictKey.TURTLE_SOUP_RULE_SIGNAL
-        )
+        turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL)
 
         if turtle_soup_signal == RuleSignal.BUY:
             if self.check_long_ratio(current_bar):
@@ -90,17 +84,13 @@ class RewardRiskRatioRule(RuleBase):
             bool: True if ratio >= configured reward_risk_ratio
         """
         # Get expected target (pivot high)
-        expected_target: Optional[float] = self.shared_state.get(
-            SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_HIGH_PRICE
-        )
+        expected_target: Optional[float] = self.shared_state.get(SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_HIGH_PRICE)
         if expected_target is None:
             self.strategy.log.warning("BUY: Expected target (pivot high) not available")
             return False
 
         # Get stop loss price
-        stop_loss_price: Optional[float] = self.shared_state.get(
-            SharedDictKeyBase.ENTRY_SL_PRICE
-        )
+        stop_loss_price: Optional[float] = self.shared_state.get(SharedDictKeyBase.ENTRY_SL_PRICE)
         if stop_loss_price is None:
             self.strategy.log.warning("BUY: Stop loss price not available")
             return False
@@ -152,17 +142,13 @@ class RewardRiskRatioRule(RuleBase):
             bool: True if ratio >= configured reward_risk_ratio
         """
         # Get expected target (pivot low)
-        expected_target: Optional[float] = self.shared_state.get(
-            SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_LOW_PRICE
-        )
+        expected_target: Optional[float] = self.shared_state.get(SharedDictKey.EXPECTED_TARGET_LATEST_PIVOT_LOW_PRICE)
         if expected_target is None:
             self.strategy.log.warning("SELL: Expected target (pivot low) not available")
             return False
 
         # Get stop loss price
-        stop_loss_price: Optional[float] = self.shared_state.get(
-            SharedDictKeyBase.ENTRY_SL_PRICE
-        )
+        stop_loss_price: Optional[float] = self.shared_state.get(SharedDictKeyBase.ENTRY_SL_PRICE)
         if stop_loss_price is None:
             self.strategy.log.warning("SELL: Stop loss price not available")
             return False
@@ -205,9 +191,7 @@ class RewardRiskRatioRule(RuleBase):
 
     def on_start(self) -> None:
         """Called when the rule starts."""
-        self.strategy.log.info(
-            f"RewardRiskRatioRule started with minimum ratio {self.config.reward_risk_ratio}:1"
-        )
+        self.strategy.log.info(f"RewardRiskRatioRule started with minimum ratio {self.config.reward_risk_ratio}:1")
 
     def on_stop(self) -> None:
         """Called when the rule stops."""

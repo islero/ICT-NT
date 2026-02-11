@@ -1,5 +1,6 @@
 from enum import StrEnum, unique
 
+
 @unique
 class SharedDictKey(StrEnum):
     UPPER_LIQUIDITY_POOLS = "upper_liquidity_pools"

@@ -1,23 +1,32 @@
 from decimal import Decimal
-import pandas as pd
-from nautilus_trader.risk.sizing import FixedRiskSizer
 from typing import Optional
-from nautilus_trader.model import Bar, Quantity, InstrumentId, ClientOrderId, Position
+
+import pandas as pd
+from nautilus_trader.model import Bar, ClientOrderId, InstrumentId, Position, Quantity
+from nautilus_trader.model.enums import OmsType, OrderSide, TimeInForce
 from nautilus_trader.model.instruments import Instrument
+from nautilus_trader.risk.sizing import FixedRiskSizer
 from nautilus_trader.trading import Strategy
-from nautilus_trader.model.enums import OrderSide, TimeInForce, OmsType
+
 from core import SharedState
+from core.constants import SharedDictKeyBase
 from core.enums import MoneyManagementType
 from core.enums.rule_signal import RuleSignal
 from core.rules.rule_base import RuleBase
-from core.constants import SharedDictKeyBase
 from risk.my_fixed_risk_sizer import MyFixedRiskSizer
 
 
 class EntryTradingRule(RuleBase):
-    def __init__(self, shared_state: SharedState, strategy: Strategy, instrument_id: InstrumentId,
-                 money_management_type: MoneyManagementType, fixed_lot: float, fixed_risk_percent: float,
-                 use_tp_order: bool = True):
+    def __init__(
+        self,
+        shared_state: SharedState,
+        strategy: Strategy,
+        instrument_id: InstrumentId,
+        money_management_type: MoneyManagementType,
+        fixed_lot: float,
+        fixed_risk_percent: float,
+        use_tp_order: bool = True,
+    ):
         super().__init__(shared_state)
         self.strategy = strategy
         self.instrument_id = instrument_id
@@ -30,13 +39,13 @@ class EntryTradingRule(RuleBase):
         # Ensure shared state is available
         if not self.shared_state:
             return False
-        
+
         entry_signal: Optional[RuleSignal] = self.shared_state.get(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.NONE)
         if entry_signal not in (RuleSignal.BUY, RuleSignal.SELL, RuleSignal.BOTH):
             return False
 
-        instrument_id:InstrumentId = self.instrument_id
-        instrument:Instrument = self.strategy.cache.instrument(instrument_id)
+        instrument_id: InstrumentId = self.instrument_id
+        instrument: Instrument = self.strategy.cache.instrument(instrument_id)
 
         if instrument is None:
             # Instrument must be available in the cache
@@ -86,7 +95,7 @@ class EntryTradingRule(RuleBase):
         # do not allow entry in an opposite direction if the hedging mode is disabled
         is_hedging = getattr(self.strategy, "oms_type", OmsType.UNSPECIFIED) == OmsType.HEDGING
         if not is_hedging:
-            open_positions:list[Position] = self.strategy.cache.positions_open()
+            open_positions: list[Position] = self.strategy.cache.positions_open()
             for pos in open_positions:
                 if pos.is_long and entry_side is not OrderSide.BUY:
                     return False
@@ -145,7 +154,7 @@ class EntryTradingRule(RuleBase):
         # Ensure shared state is available
         if not self.shared_state:
             return False
-        
+
         key = SharedDictKeyBase.ORDERS_LIST
         orders_list = self.shared_state.get(key, [])
         if not orders_list:  # if the key was missing, we got the default []
@@ -191,7 +200,7 @@ class EntryTradingRule(RuleBase):
         # Ensure shared state is available
         if not self.shared_state:
             return False
-        
+
         key = SharedDictKeyBase.ORDERS
         orders = self.shared_state.get(key, [])
         if not orders:  # if the key was missing, we got the default []
@@ -228,9 +237,9 @@ class EntryTradingRule(RuleBase):
             if tp_order is not None and tp_obj_key is not None and tp_obj_key not in existing_group:
                 existing_group[tp_obj_key] = tp_order
 
-    def get_quantity(self, bar:Bar, sl_price, risk:Decimal) -> Quantity:
-        instrument_id:InstrumentId = self.instrument_id
-        instrument:Instrument = self.strategy.cache.instrument(instrument_id)
+    def get_quantity(self, bar: Bar, sl_price, risk: Decimal) -> Quantity:
+        instrument_id: InstrumentId = self.instrument_id
+        instrument: Instrument = self.strategy.cache.instrument(instrument_id)
 
         # 1) Inputs for sizing
         if bar is None:
@@ -300,11 +309,6 @@ class EntryTradingRule(RuleBase):
 
         # 5) Compute quantity using FixedRiskSizer
         sizer = MyFixedRiskSizer(instrument)
-        quantity = sizer.calculate(
-            entry=entry_price,
-            stop_loss=sl_price,
-            equity=equity,
-            risk=risk
-        )
+        quantity = sizer.calculate(entry=entry_price, stop_loss=sl_price, equity=equity, risk=risk)
 
         return quantity

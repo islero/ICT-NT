@@ -11,15 +11,15 @@ These tests verify:
 - Confidence levels and reason codes
 """
 
-import sys
 import os
-from unittest.mock import MagicMock
+import sys
 from abc import ABC, abstractmethod
+from unittest.mock import MagicMock
 
 import pytest
 
 # Ensure we can import from the project root
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # --- MOCKING NAUTILUS TRADER ---
 sys.modules["pandas"] = MagicMock()
@@ -44,19 +44,21 @@ class MockIndicator:
 
 sys.modules["nautilus_trader.indicators.base"].Indicator = MockIndicator
 
+from constants.shared_dict_key import SharedDictKey
+
 # Import dependencies
 from core import SharedState
-from constants.shared_dict_key import SharedDictKey
+from indicators.fair_value_gap import FairValueGap, FvgDirection
+from indicators.fibonacci_levels import FibonacciLevels, PriceZone, TradeDirection
 
 # Import indicators
 from indicators.smart_pivot_points import SmartPivotPoints, Trend
-from indicators.fibonacci_levels import FibonacciLevels, TradeDirection, PriceZone
-from indicators.fair_value_gap import FairValueGap, FvgDirection
 
 
 # Mock RuleBase
 class MockRuleBase(ABC):
     """Mock RuleBase for testing."""
+
     is_backtest = False
 
     def __init__(self, shared_state=None):
@@ -101,20 +103,14 @@ def _bars_from_ohlc(series: list[tuple[float, float, float, float]]) -> list[Moc
     """Build bars from a list of (open, high, low, close) tuples."""
     bars = []
     for i, (o, h, l, c) in enumerate(series):
-        bars.append(MockBar(
-            open_price=o,
-            high=h,
-            low=l,
-            close=c,
-            ts_event=i * 1000
-        ))
+        bars.append(MockBar(open_price=o, high=h, low=l, close=c, ts_event=i * 1000))
     return bars
 
 
 # Import enums and config from rule
 from dataclasses import dataclass
-from typing import Optional, List
 from enum import Enum
+from typing import List, Optional
 
 
 class DailyBias(Enum):
@@ -454,9 +450,9 @@ class DailyBiasRule(MockRuleBase):
             score += 1
         if ReasonCode.IN_OTE in self._reason_codes:
             score += 1
-        elif (bias == DailyBias.BULLISH and ReasonCode.IN_DISCOUNT in self._reason_codes):
+        elif bias == DailyBias.BULLISH and ReasonCode.IN_DISCOUNT in self._reason_codes:
             score += 1
-        elif (bias == DailyBias.BEARISH and ReasonCode.IN_PREMIUM in self._reason_codes):
+        elif bias == DailyBias.BEARISH and ReasonCode.IN_PREMIUM in self._reason_codes:
             score += 1
         if self._bars_since_structure_change <= 1:
             score += 1
@@ -543,6 +539,7 @@ class DailyBiasRule(MockRuleBase):
 # ============================================================================
 # TESTS
 # ============================================================================
+
 
 class TestDailyBiasRuleStructureClassification:
     """Tests for structure-only classification."""
@@ -634,7 +631,7 @@ class TestDailyBiasRuleBiasGating:
         # Build uptrend with weak candles (no displacement)
         uptrend_prices = [
             (95, 100, 90, 95),
-            (95, 101, 94, 96),   # Weak body
+            (95, 101, 94, 96),  # Weak body
             (96, 102, 95, 101),  # Break above but weak
         ]
 
@@ -715,9 +712,9 @@ class TestDailyBiasRuleZoneClassification:
         prices = [
             (107, 110, 105, 108),
             (108, 108, 100, 101),
-            (101, 103, 95, 94),   # Break below -> BEARISH
-            (94, 98, 90, 92),     # New low
-            (92, 105, 91, 103),   # Rally to premium
+            (101, 103, 95, 94),  # Break below -> BEARISH
+            (94, 98, 90, 92),  # New low
+            (92, 105, 91, 103),  # Rally to premium
         ]
 
         bars = _bars_from_ohlc(prices)

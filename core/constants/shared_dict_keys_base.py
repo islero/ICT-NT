@@ -1,5 +1,6 @@
 from enum import StrEnum, unique
 
+
 @unique
 class SharedDictKeyBase(StrEnum):
     # Warm up and subscribed bar types

@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class RuleSignal(Enum):
     """
     Represents the possible outcomes of evaluating a trading rule.
@@ -11,6 +12,7 @@ class RuleSignal(Enum):
     SELL: The rule indicates a sell signal.
     BOTH: The rule indicates both buy and sell signals are valid
     """
+
     NONE = "none"
     BUY = "buy"
     SELL = "sell"

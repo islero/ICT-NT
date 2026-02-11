@@ -9,14 +9,14 @@ These tests verify:
 - Edge cases and invalid inputs
 """
 
-import sys
 import os
+import sys
 from unittest.mock import MagicMock
 
 import pytest
 
 # Ensure we can import from the project root
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # --- MOCKING NAUTILUS TRADER ---
 sys.modules["pandas"] = MagicMock()
@@ -40,10 +40,10 @@ sys.modules["nautilus_trader.indicators.base"].Indicator = MockIndicator
 
 # Now import the indicator
 from indicators.fibonacci_levels import (
-    FibonacciLevels,
-    TradeDirection,
-    PriceZone,
     FibonacciLevel,
+    FibonacciLevels,
+    PriceZone,
+    TradeDirection,
 )
 
 

@@ -1,14 +1,17 @@
 from typing import Any
-from nautilus_trader.model.identifiers import ClientOrderId, InstrumentId
+
 from nautilus_trader.model import Bar, QuoteTick
+from nautilus_trader.model.identifiers import ClientOrderId, InstrumentId
 from nautilus_trader.model.orders import Order
 from nautilus_trader.trading import Strategy
-from core.constants import SharedDictKeyBase
+
 from core import SharedState
+from core.constants import SharedDictKeyBase
 from core.rules.quote_tick_rule_base import QuoteTickRuleBase
 
+
 class SyncSharedOrdersQuoteRule(QuoteTickRuleBase):
-    def __init__(self, shared_state: SharedState, strategy: Strategy, instrument_id:InstrumentId):
+    def __init__(self, shared_state: SharedState, strategy: Strategy, instrument_id: InstrumentId):
         super().__init__()
         self.strategy = strategy
         self.shared_state = shared_state
@@ -61,10 +64,10 @@ class SyncSharedOrdersQuoteRule(QuoteTickRuleBase):
                 self.strategy.cancel_all_orders(self.instrument_id)
             return True
 
-        orders_to_remove:list[Any] = []
+        orders_to_remove: list[Any] = []
         for orders in orders_list:
-            entry_order:Order = orders.get(SharedDictKeyBase.ENTRY_ORDER)
-            entry_order_id:ClientOrderId = entry_order.client_order_id
+            entry_order: Order = orders.get(SharedDictKeyBase.ENTRY_ORDER)
+            entry_order_id: ClientOrderId = entry_order.client_order_id
 
             entry_order_exists = False
             for position in open_positions:

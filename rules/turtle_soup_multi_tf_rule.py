@@ -1,14 +1,17 @@
 # rules/turtle_soup_multi_tf_rule.py
 from dataclasses import dataclass
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 import pandas as pd
-from nautilus_trader.model import BarType, Bar
+from nautilus_trader.model import Bar, BarType
 from nautilus_trader.trading import Strategy
+
 from constants.shared_dict_key import SharedDictKey
 from core import SharedState
 from core.constants import SharedDictKeyBase
 from core.enums import RuleSignal
 from core.rules import RuleBase
+
 
 @dataclass
 class TurtleSoupMultiTFRuleConfig:
@@ -25,12 +28,14 @@ class TurtleSoupMultiTFRuleConfig:
         retries_count_on_stop_out: Number of retries on the same day only N position can be reopened if all conditions are met
         sl_shift: Shift value to add/subtract from the stop loss level for buffer
     """
-    levels_sources: List[BarType]      # e.g., [weekly, daily]
-    analysis_chain: List[BarType]      # e.g., [daily, 4h, 1h, 15m, 5m, 1m]
-    stop_loss_bar_type: BarType        # e.g., 1h
-    turtle_bars_count: int             # e.g., 4 means 4 bars are using to check the pattern
-    retries_count_on_stop_out: int     # e.g., 2 - means 2 retries on the same day
-    sl_shift: float                    # e.g., 0.0001 - adds buffer to stop loss
+
+    levels_sources: List[BarType]  # e.g., [weekly, daily]
+    analysis_chain: List[BarType]  # e.g., [daily, 4h, 1h, 15m, 5m, 1m]
+    stop_loss_bar_type: BarType  # e.g., 1h
+    turtle_bars_count: int  # e.g., 4 means 4 bars are using to check the pattern
+    retries_count_on_stop_out: int  # e.g., 2 - means 2 retries on the same day
+    sl_shift: float  # e.g., 0.0001 - adds buffer to stop loss
+
 
 class TurtleSoupMultiTFRule(RuleBase):
     """Multi-timeframe Turtle Soup rule.
@@ -49,6 +54,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
     The rule also manages subscriptions for the required bar types on start/stop.
     """
+
     def __init__(self, shared_state: SharedState, strategy: Strategy, config: TurtleSoupMultiTFRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
@@ -98,7 +104,7 @@ class TurtleSoupMultiTFRule(RuleBase):
             bars: List[Bar] = self.strategy.cache.bars(bar.bar_type.standard())
             if not bars or len(bars) < self.config.turtle_bars_count:
                 continue
-            bars_slice = bars[:self.config.turtle_bars_count]
+            bars_slice = bars[: self.config.turtle_bars_count]
 
             # First, look for an upper-liquidity raid
             if upper_liquidity_pools:
@@ -144,16 +150,16 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         tracker = self.pool_usage_tracker[unique_key]
 
-        #TODO: this check has to be checked first
+        # TODO: this check has to be checked first
         if len(self.strategy.cache.positions_open()) > 0:
             return False
 
         # Rule 3: Check if used on a different day (not today)
-        if tracker['date'] != current_date:
+        if tracker["date"] != current_date:
             return False
 
         # Rule 2: Check if already attempted 2 times today
-        if tracker['date'] == current_date and tracker.get('attempts', 0) >= self.config.retries_count_on_stop_out:
+        if tracker["date"] == current_date and tracker.get("attempts", 0) >= self.config.retries_count_on_stop_out:
             return False
 
         return True
@@ -165,37 +171,43 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         if unique_key not in self.pool_usage_tracker:
             self.pool_usage_tracker[unique_key] = {
-                'date': current_date,
-                'attempts': 1,
+                "date": current_date,
+                "attempts": 1,
             }
         else:
             tracker = self.pool_usage_tracker[unique_key]
-            if tracker['date'] == current_date:
-                tracker['attempts'] = tracker.get('attempts', 0) + 1
+            if tracker["date"] == current_date:
+                tracker["attempts"] = tracker.get("attempts", 0) + 1
             else:
                 # New day, reset attempts
-                tracker['date'] = current_date
-                tracker['attempts'] = 1
+                tracker["date"] = current_date
+                tracker["attempts"] = 1
 
-    def _cleanup_pool_tracker(self, upper_liquidity_pools: list[tuple[float, int]], lower_liquidity_pools: list[tuple[float, int]],
-                          current_date: str):
+    def _cleanup_pool_tracker(
+        self,
+        upper_liquidity_pools: list[tuple[float, int]],
+        lower_liquidity_pools: list[tuple[float, int]],
+        current_date: str,
+    ):
         """Remove pools from the tracker that no longer exist in current liquidity pools or are older than 1 month."""
         from datetime import datetime, timedelta
 
         valid_pools = set(upper_liquidity_pools + lower_liquidity_pools)
-        current_dt = datetime.strptime(current_date, '%Y-%m-%d')
+        current_dt = datetime.strptime(current_date, "%Y-%m-%d")
         one_month_ago = current_dt - timedelta(days=30)
 
         pools_to_remove = []
         for pool in self.pool_usage_tracker:
-            pool_date = datetime.strptime(self.pool_usage_tracker[pool]['date'], '%Y-%m-%d')
+            pool_date = datetime.strptime(self.pool_usage_tracker[pool]["date"], "%Y-%m-%d")
             if pool not in valid_pools and pool_date < one_month_ago:
                 pools_to_remove.append(pool)
 
         for pool in pools_to_remove:
             del self.pool_usage_tracker[pool]
 
-    def __handle_upper_liquidity_raid(self, bars_slice: List[Bar], upper_liquidity_pools: List[tuple[float, int]], current_date: str, bar: Bar) -> Optional[tuple[float, int]]:
+    def __handle_upper_liquidity_raid(
+        self, bars_slice: List[Bar], upper_liquidity_pools: List[tuple[float, int]], current_date: str, bar: Bar
+    ) -> Optional[tuple[float, int]]:
         """Check if any upper liquidity pool was raided in the given bars slice.
 
         A valid upper raid pattern is delegated to ``__check_upper_liquidity_raid``.
@@ -222,18 +234,22 @@ class TurtleSoupMultiTFRule(RuleBase):
                 highest_high_current_tf_in_slice = max(bars_slice_current_tf_highs)
 
                 sl_bars = self.strategy.cache.bars(self.config.stop_loss_bar_type.standard())
-                sl_bar_slice = sl_bars[:self.config.turtle_bars_count]
+                sl_bar_slice = sl_bars[: self.config.turtle_bars_count]
                 sl_bar_slice_highs = [float(b.high) for b in sl_bar_slice if b is not None]
                 highest_high_new_bar_in_slice = max(sl_bar_slice_highs)
 
                 if self.shared_state:
-                    stop_loss = max(highest_high_current_tf_in_slice, highest_high_new_bar_in_slice) + self.config.sl_shift
+                    stop_loss = (
+                        max(highest_high_current_tf_in_slice, highest_high_new_bar_in_slice) + self.config.sl_shift
+                    )
                     self.shared_state.set(SharedDictKeyBase.ENTRY_SL_PRICE, stop_loss)
-                    
+
                 return pool
         return None
 
-    def __handle_lower_liquidity_raid(self, bars_slice: List[Bar], lower_liquidity_pools: List[tuple[float, int]], current_date: str, new_bar: Bar) -> Optional[tuple[float, int]]:
+    def __handle_lower_liquidity_raid(
+        self, bars_slice: List[Bar], lower_liquidity_pools: List[tuple[float, int]], current_date: str, new_bar: Bar
+    ) -> Optional[tuple[float, int]]:
         """Check if any lower liquidity pool was raided in the given bars slice.
 
         A valid lower raid pattern is delegated to ``__check_lower_liquidity_raid``.
@@ -259,7 +275,7 @@ class TurtleSoupMultiTFRule(RuleBase):
                 lowest_low_current_tf_in_slice = min(bars_slice_current_tf_lows)
 
                 sl_bars = self.strategy.cache.bars(self.config.stop_loss_bar_type.standard())
-                sl_bar_slice = sl_bars[:self.config.turtle_bars_count]
+                sl_bar_slice = sl_bars[: self.config.turtle_bars_count]
                 sl_bar_slice_lows = [float(b.low) for b in sl_bar_slice if b is not None]
                 lowest_low_new_bar_in_slice = min(sl_bar_slice_lows)
 
@@ -338,7 +354,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         # Build the set of unique BarTypes to subscribe
         to_subscribe = []
-        for bt in (self.config.levels_sources + self.config.analysis_chain):
+        for bt in self.config.levels_sources + self.config.analysis_chain:
             std = bt.standard()
             if std not in lst:
                 lst.append(std)
@@ -367,7 +383,7 @@ class TurtleSoupMultiTFRule(RuleBase):
 
         key = SharedDictKeyBase.WARMED_UP_AND_SUBSCRIBED_BAR_TYPES
         lst = self.shared_state.get(key, [])
-        for bt in (self.config.levels_sources + self.config.analysis_chain):
+        for bt in self.config.levels_sources + self.config.analysis_chain:
             if bt in lst:
                 try:
                     self.strategy.unsubscribe_bars(bt)

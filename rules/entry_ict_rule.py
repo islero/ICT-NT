@@ -35,6 +35,7 @@ class EntryIctRuleConfig:
     Parameters:
         risk_reward_ratio: Risk/reward ratio for take profit calculation.
     """
+
     risk_reward_ratio: float = 2.0
 
 
@@ -55,12 +56,7 @@ class EntryIctRule(RuleBase):
         config: Rule configuration
     """
 
-    def __init__(
-        self,
-        shared_state: SharedState,
-        strategy: Strategy,
-        config: EntryIctRuleConfig
-    ):
+    def __init__(self, shared_state: SharedState, strategy: Strategy, config: EntryIctRuleConfig):
         super().__init__(shared_state)
         self.strategy = strategy
         self.config = config
@@ -101,23 +97,17 @@ class EntryIctRule(RuleBase):
             return False
 
         # Check Turtle Soup signal
-        turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(
-            SharedDictKey.TURTLE_SOUP_RULE_SIGNAL
-        )
+        turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL)
         if turtle_soup_signal not in (RuleSignal.BUY, RuleSignal.BOTH):
             return False
 
         # Check Weekly context - must NOT block longs
-        weekly_blocks_longs: bool = self.shared_state.get(
-            SharedDictKey.WEEKLY_BLOCK_LONGS, False
-        )
+        weekly_blocks_longs: bool = self.shared_state.get(SharedDictKey.WEEKLY_BLOCK_LONGS, False)
         if weekly_blocks_longs:
             return False
 
         # Check Daily bias - must NOT block longs
-        daily_blocks_longs: bool = self.shared_state.get(
-            SharedDictKey.DAILY_BLOCK_LONGS, False
-        )
+        daily_blocks_longs: bool = self.shared_state.get(SharedDictKey.DAILY_BLOCK_LONGS, False)
         if daily_blocks_longs:
             return False
 
@@ -127,9 +117,7 @@ class EntryIctRule(RuleBase):
             return False
 
         if stop_loss_price >= current_bar.close:
-            self.strategy.log.error(
-                f"BUY sl {stop_loss_price} >= current bar close {current_bar.close}"
-            )
+            self.strategy.log.error(f"BUY sl {stop_loss_price} >= current bar close {current_bar.close}")
             # Reset the rule signal
             self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
             return False
@@ -168,23 +156,17 @@ class EntryIctRule(RuleBase):
             return False
 
         # Check Turtle Soup signal
-        turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(
-            SharedDictKey.TURTLE_SOUP_RULE_SIGNAL
-        )
+        turtle_soup_signal: Optional[RuleSignal] = self.shared_state.get(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL)
         if turtle_soup_signal not in (RuleSignal.SELL, RuleSignal.BOTH):
             return False
 
         # Check Weekly context - must NOT block shorts
-        weekly_blocks_shorts: bool = self.shared_state.get(
-            SharedDictKey.WEEKLY_BLOCK_SHORTS, False
-        )
+        weekly_blocks_shorts: bool = self.shared_state.get(SharedDictKey.WEEKLY_BLOCK_SHORTS, False)
         if weekly_blocks_shorts:
             return False
 
         # Check Daily bias - must NOT block shorts
-        daily_blocks_shorts: bool = self.shared_state.get(
-            SharedDictKey.DAILY_BLOCK_SHORTS, False
-        )
+        daily_blocks_shorts: bool = self.shared_state.get(SharedDictKey.DAILY_BLOCK_SHORTS, False)
         if daily_blocks_shorts:
             return False
 
@@ -194,9 +176,7 @@ class EntryIctRule(RuleBase):
             return False
 
         if stop_loss_price <= current_bar.close:
-            self.strategy.log.error(
-                f"SELL sl {stop_loss_price} <= current bar close {current_bar.close}"
-            )
+            self.strategy.log.error(f"SELL sl {stop_loss_price} <= current bar close {current_bar.close}")
             # Reset the rule signal
             self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
             return False

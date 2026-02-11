@@ -10,16 +10,16 @@ These tests verify:
 - SharedState outputs
 """
 
-import sys
 import os
-from unittest.mock import MagicMock
+import sys
 from abc import ABC, abstractmethod
 from typing import Sequence
+from unittest.mock import MagicMock
 
 import pytest
 
 # Ensure we can import from the project root
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # --- MOCKING NAUTILUS TRADER ---
 sys.modules["pandas"] = MagicMock()
@@ -44,18 +44,20 @@ class MockIndicator:
 
 sys.modules["nautilus_trader.indicators.base"].Indicator = MockIndicator
 
+from constants.shared_dict_key import SharedDictKey
+
 # Import dependencies
 from core import SharedState
-from constants.shared_dict_key import SharedDictKey
+from indicators.fibonacci_levels import FibonacciLevels, PriceZone, TradeDirection
 
 # Import indicators
 from indicators.smart_pivot_points import SmartPivotPoints, Trend
-from indicators.fibonacci_levels import FibonacciLevels, TradeDirection, PriceZone
 
 
 # Mock RuleBase
 class MockRuleBase(ABC):
     """Mock RuleBase for testing."""
+
     is_backtest = False
 
     def __init__(self, shared_state=None):
@@ -100,24 +102,19 @@ def _bars_from_ohlc(series: Sequence[tuple[float, float, float, float]]) -> list
     """Build bars from a list of (open, high, low, close) tuples."""
     bars = []
     for i, (o, h, l, c) in enumerate(series):
-        bars.append(MockBar(
-            open_price=o,
-            high=h,
-            low=l,
-            close=c,
-            ts_event=i * 1000
-        ))
+        bars.append(MockBar(open_price=o, high=h, low=l, close=c, ts_event=i * 1000))
     return bars
 
 
 # Import and recreate WeeklyContextRule for testing
 from dataclasses import dataclass
-from typing import Optional
 from enum import Enum
+from typing import Optional
 
 
 class WeeklyStructure(Enum):
     """Weekly market structure classification."""
+
     NEUTRAL = "neutral"
     BULLISH = "bullish"
     BEARISH = "bearish"
@@ -125,6 +122,7 @@ class WeeklyStructure(Enum):
 
 class WeeklyZone(Enum):
     """Weekly price zone classification."""
+
     UNKNOWN = "unknown"
     DISCOUNT = "discount"
     PREMIUM = "premium"
@@ -324,6 +322,7 @@ class WeeklyContextRule(MockRuleBase):
 # TESTS
 # ============================================================================
 
+
 class TestWeeklyContextRuleBullishStructure:
     """Tests for bullish Weekly structure detection."""
 
@@ -337,11 +336,11 @@ class TestWeeklyContextRuleBullishStructure:
 
         # Build uptrend-friendly OHLC series (HH -> HL -> HH)
         uptrend_prices = [
-            (97, 100, 95, 98),      # 0. Initial range
-            (98, 105, 97, 104),     # 1. Potential HH
-            (104, 106, 100, 106),   # 2. Break above -> BULLISH confirmed
-            (106, 107, 99, 100),    # 3. Pullback (potential HL)
-            (100, 108, 98, 107),    # 4. Break above confirms HL
+            (97, 100, 95, 98),  # 0. Initial range
+            (98, 105, 97, 104),  # 1. Potential HH
+            (104, 106, 100, 106),  # 2. Break above -> BULLISH confirmed
+            (106, 107, 99, 100),  # 3. Pullback (potential HL)
+            (100, 108, 98, 107),  # 4. Break above confirms HL
         ]
 
         bars = _bars_from_ohlc(uptrend_prices)
@@ -389,11 +388,11 @@ class TestWeeklyContextRuleBearishStructure:
 
         # Build downtrend-friendly OHLC series (LL -> LH -> LL)
         downtrend_prices = [
-            (107, 110, 105, 108),   # 0. Initial range
-            (108, 108, 102, 103),   # 1. Drop
-            (103, 105, 100, 99),    # 2. Break below -> BEARISH confirmed
-            (99, 106, 99, 105),     # 3. Pullback (potential LH)
-            (105, 106, 95, 96),     # 4. Break below confirms LH
+            (107, 110, 105, 108),  # 0. Initial range
+            (108, 108, 102, 103),  # 1. Drop
+            (103, 105, 100, 99),  # 2. Break below -> BEARISH confirmed
+            (99, 106, 99, 105),  # 3. Pullback (potential LH)
+            (105, 106, 95, 96),  # 4. Break below confirms LH
         ]
 
         bars = _bars_from_ohlc(downtrend_prices)
@@ -464,11 +463,11 @@ class TestWeeklyContextRuleZoneClassification:
 
         # Establish bullish structure with clear range
         uptrend_prices = [
-            (95, 100, 90, 95),      # Range: 90-100
-            (95, 105, 94, 104),     # Potential HH
-            (104, 110, 100, 108),   # Break above -> BULLISH, new high
-            (108, 112, 102, 103),   # Pullback
-            (103, 106, 92, 93),     # Deep pullback to discount zone
+            (95, 100, 90, 95),  # Range: 90-100
+            (95, 105, 94, 104),  # Potential HH
+            (104, 110, 100, 108),  # Break above -> BULLISH, new high
+            (108, 112, 102, 103),  # Pullback
+            (103, 106, 92, 93),  # Deep pullback to discount zone
         ]
 
         bars = _bars_from_ohlc(uptrend_prices)
@@ -491,11 +490,11 @@ class TestWeeklyContextRuleZoneClassification:
 
         # Establish bearish structure
         downtrend_prices = [
-            (107, 110, 105, 108),   # Range: 105-110
-            (108, 108, 100, 101),   # Drop
-            (101, 103, 95, 96),     # Break below -> BEARISH
-            (96, 98, 90, 92),       # New low
-            (92, 105, 91, 103),     # Rally back to premium zone
+            (107, 110, 105, 108),  # Range: 105-110
+            (108, 108, 100, 101),  # Drop
+            (101, 103, 95, 96),  # Break below -> BEARISH
+            (96, 98, 90, 92),  # New low
+            (92, 105, 91, 103),  # Rally back to premium zone
         ]
 
         bars = _bars_from_ohlc(downtrend_prices)
@@ -527,11 +526,11 @@ class TestWeeklyContextRuleTradeBlocking:
         # After bar 3 (116 > 115): major_low=100, major_high=118, candidate_low=110
         # Bar 4: Need close > 100 to avoid reversal, but < equilibrium (109) for discount
         uptrend_prices = [
-            (95, 100, 90, 95),       # 0. Initial range (90-100)
-            (95, 105, 94, 104),      # 1. Break above -> BULLISH
-            (104, 115, 100, 113),    # 2. Continue up
-            (113, 118, 110, 116),    # 3. Continue up, major_low becomes 100
-            (116, 117, 102, 104),    # 4. Pullback, close=104 > major_low=100, equilibrium~109
+            (95, 100, 90, 95),  # 0. Initial range (90-100)
+            (95, 105, 94, 104),  # 1. Break above -> BULLISH
+            (104, 115, 100, 113),  # 2. Continue up
+            (113, 118, 110, 116),  # 3. Continue up, major_low becomes 100
+            (116, 117, 102, 104),  # 4. Pullback, close=104 > major_low=100, equilibrium~109
         ]
 
         bars = _bars_from_ohlc(uptrend_prices)
@@ -563,9 +562,9 @@ class TestWeeklyContextRuleTradeBlocking:
         downtrend_prices = [
             (107, 110, 105, 108),
             (108, 108, 100, 101),
-            (101, 103, 95, 96),     # Break below -> BEARISH
-            (96, 98, 90, 92),       # New low
-            (92, 105, 91, 103),     # Rally to premium
+            (101, 103, 95, 96),  # Break below -> BEARISH
+            (96, 98, 90, 92),  # New low
+            (92, 105, 91, 103),  # Rally to premium
         ]
 
         bars = _bars_from_ohlc(downtrend_prices)
@@ -608,8 +607,8 @@ class TestWeeklyContextRuleTradeBlocking:
         uptrend_prices = [
             (95, 100, 90, 95),
             (95, 105, 94, 104),
-            (104, 110, 100, 108),   # Break above -> BULLISH
-            (108, 115, 105, 114),   # Continues higher (premium zone)
+            (104, 110, 100, 108),  # Break above -> BULLISH
+            (108, 115, 105, 114),  # Continues higher (premium zone)
         ]
 
         bars = _bars_from_ohlc(uptrend_prices)
@@ -636,7 +635,7 @@ class TestWeeklyContextRuleRecommendedEntry:
         uptrend_prices = [
             (95, 100, 90, 95),
             (95, 105, 94, 104),
-            (104, 110, 100, 108),   # Break above -> BULLISH
+            (104, 110, 100, 108),  # Break above -> BULLISH
         ]
 
         bars = _bars_from_ohlc(uptrend_prices)
@@ -665,7 +664,7 @@ class TestWeeklyContextRuleRecommendedEntry:
         downtrend_prices = [
             (107, 110, 105, 108),
             (108, 108, 100, 101),
-            (101, 103, 95, 96),     # Break below -> BEARISH
+            (101, 103, 95, 96),  # Break below -> BEARISH
         ]
 
         bars = _bars_from_ohlc(downtrend_prices)
@@ -782,11 +781,11 @@ class TestWeeklyContextRuleFavorability:
         # Establish bullish structure with controlled pullback
         # Close must stay above major_low to maintain structure
         uptrend_prices = [
-            (95, 100, 90, 95),       # 0. Initial range (90-100)
-            (95, 105, 94, 104),      # 1. Break above -> BULLISH
-            (104, 115, 100, 113),    # 2. Continue up
-            (113, 118, 110, 116),    # 3. Continue up, major_low becomes 100
-            (116, 117, 102, 104),    # 4. Pullback, close=104 > major_low=100
+            (95, 100, 90, 95),  # 0. Initial range (90-100)
+            (95, 105, 94, 104),  # 1. Break above -> BULLISH
+            (104, 115, 100, 113),  # 2. Continue up
+            (113, 118, 110, 116),  # 3. Continue up, major_low becomes 100
+            (116, 117, 102, 104),  # 4. Pullback, close=104 > major_low=100
         ]
 
         bars = _bars_from_ohlc(uptrend_prices)
@@ -836,7 +835,7 @@ class TestWeeklyContextRuleFavorability:
             (108, 108, 100, 101),
             (101, 103, 95, 96),
             (96, 98, 90, 92),
-            (92, 105, 91, 103),     # Rally to premium
+            (92, 105, 91, 103),  # Rally to premium
         ]
 
         bars = _bars_from_ohlc(downtrend_prices)
@@ -947,7 +946,7 @@ class TestWeeklyContextRuleNoExecutionLogic:
             rule.evaluate(bar)
 
         # Rule should NOT have a signal attribute or entry_rule_signal
-        assert not hasattr(rule, 'signal')
+        assert not hasattr(rule, "signal")
         # entry_rule_signal key should NOT be set by this rule
         # (it may exist from other rules, but this rule doesn't set it)
 
