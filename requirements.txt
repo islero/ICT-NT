@@ -36,7 +36,7 @@ notebook==7.4.5
 
 # Visualization
 matplotlib==3.10.6
-plotly==6.3.1
+plotly==6.5.2
 
 # =============================================================================
 # Testing and Development
