@@ -233,7 +233,7 @@ class ICTStrategy(RuleBasedStrategy):
             expected_target_rule,
             # Entry signal generators (both use ENTRY_RULE_SIGNAL)
             turtle_soup_rule,
-            fvg_rule,
+            #fvg_rule,
             # Validate reward/risk ratio for both turtle_soup and fvg signals
             reward_risk_ratio_rule,
             liquidity_pool_reuse_rule,
