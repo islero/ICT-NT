@@ -90,8 +90,29 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 3. Install dependencies:
+
+**Option A: Using pip and requirements files**
 ```bash
+# Core dependencies
 pip install -r requirements.txt
+
+# For development (includes linting, testing tools, etc.)
+pip install -r requirements-dev.txt
+```
+
+**Option B: Using pip with pyproject.toml**
+```bash
+# Core dependencies only
+pip install -e .
+
+# With Jupyter notebooks support
+pip install -e ".[jupyter]"
+
+# With development tools
+pip install -e ".[dev]"
+
+# Everything
+pip install -e ".[all]"
 ```
 
 ## Project Structure

@@ -1,0 +1,25 @@
+# Include documentation and configuration files
+include README.md
+include LICENSE
+include CONTRIBUTING.md
+include requirements.txt
+include requirements-dev.txt
+include pyproject.toml
+include .python-version
+
+# Exclude development and data files
+exclude .gitignore
+exclude .env
+recursive-exclude tests *
+recursive-exclude notebooks *
+recursive-exclude data *
+recursive-exclude catalog *
+recursive-exclude .github *
+recursive-exclude docs *
+recursive-exclude examples *
+
+# Exclude Python cache and build artifacts
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *.so
+global-exclude .DS_Store

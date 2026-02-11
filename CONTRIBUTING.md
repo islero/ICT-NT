@@ -30,11 +30,11 @@ cd "ICT NT"
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# Install dependencies
+# Install core dependencies
 pip install -r requirements.txt
 
-# Install development dependencies
-pip install pytest
+# Install development dependencies (linting, testing, profiling tools)
+pip install -r requirements-dev.txt
 ```
 
 ## Code Style
