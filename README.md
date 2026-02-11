@@ -1,5 +1,10 @@
 # ICT Trading Strategy Framework
 
+[![Tests](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/test.yml)
+[![Code Quality](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/code-quality.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/code-quality.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 A sophisticated algorithmic trading framework built on [NautilusTrader](https://github.com/nautechsystems/nautilus_trader) that implements Inner Circle Trader (ICT) concepts and Turtle Soup strategies for systematic trading.
 
 ## Features
@@ -158,6 +163,52 @@ strategy = RuleBasedStrategy(
 )
 ```
 
+## Jupyter Notebooks
+
+The `notebooks/` directory contains interactive Jupyter notebooks for analysis, backtesting, and data preparation:
+
+### Strategy Backtesting
+
+- **`turtle_soup_strategy_backtest.ipynb`**: Complete backtest of the Turtle Soup strategy with detailed performance metrics, position analysis, and visualizations. Generates comprehensive reports including:
+  - PnL statistics (total return, win rate, expectancy)
+  - Risk metrics (Sharpe ratio, Sortino ratio, drawdowns)
+  - Position reports and cumulative returns charts
+  - Commission analysis by liquidity side
+
+- **`ict_strategy_backtest.ipynb`**: Full backtest implementation of the ICT-based strategy with:
+  - Multi-timeframe analysis (weekly, daily, intraday)
+  - Equity curve and drawdown visualization
+  - Detailed performance statistics
+  - Position-by-position analysis
+
+### Data Management
+
+- **`databento_dbn_zst_to_parquet_catalog.ipynb`**: Converts Databento DBN compressed files (`.dbn.zst`) to NautilusTrader-compatible Parquet data catalog format. Handles:
+  - Schema mapping and normalization
+  - Timezone conversions
+  - Partitioned Parquet file writing
+
+- **`databento_csv_to_parquet_catalog.ipynb`**: Converts CSV historical data to Parquet catalog format
+
+- **`databento_viewer.ipynb`**: Utility notebook for viewing and processing Databento data files:
+  - Remove calendar spreads
+  - Filter front-month contracts by daily volume
+  - Export processed data to CSV
+
+- **`write_instrument_to_parquet_catalog.ipynb`**: Utility for writing instrument definitions to the Parquet catalog
+
+### Running Notebooks
+
+```bash
+# Start Jupyter
+jupyter notebook
+
+# Or JupyterLab
+jupyter lab
+```
+
+Navigate to the `notebooks/` directory and open any notebook to run backtests or process data.
+
 ## Configuration
 
 Create a `.env` file in the project root for environment-specific settings:
@@ -179,6 +230,15 @@ Run specific tests:
 ```bash
 pytest tests/test_smart_pivot_points.py -v
 ```
+
+### Continuous Integration
+
+This project uses GitHub Actions for automated testing:
+- **Tests**: Automatically run on all pushes and pull requests across multiple OS (Ubuntu, macOS, Windows) and Python versions (3.11, 3.12)
+- **Code Quality**: Automated linting, formatting checks, type checking, and security scans
+- **Dependency Updates**: Dependabot automatically creates PRs for dependency updates
+
+Check the status badges at the top of this README for current build status.
 
 ## Key Concepts
 

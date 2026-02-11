@@ -96,6 +96,39 @@ pytest -v
 pytest --cov=.
 ```
 
+### Continuous Integration
+
+This project uses GitHub Actions for automated testing and code quality checks. Every push and pull request triggers:
+
+1. **Test Workflow** (`.github/workflows/test.yml`):
+   - Runs tests on Ubuntu, macOS, and Windows
+   - Tests against Python 3.11 and 3.12
+   - Validates module imports
+   - Generates coverage reports
+
+2. **Code Quality Workflow** (`.github/workflows/code-quality.yml`):
+   - Code formatting checks (Black, isort)
+   - Linting (flake8, pylint)
+   - Type checking (mypy)
+   - Security scanning (Bandit, Safety)
+
+All checks must pass before a pull request can be merged. You can run these checks locally before pushing:
+
+```bash
+# Code formatting
+black .
+isort .
+
+# Linting
+flake8 .
+
+# Type checking
+mypy .
+
+# Security check
+bandit -r .
+```
+
 ### Writing Tests
 
 ```python
