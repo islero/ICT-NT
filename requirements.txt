@@ -71,7 +71,7 @@ multidict==6.7.0
 narwhals==2.10.1
 nautilus_trader==1.221.0
 nbclient==0.10.2
-nbconvert==7.16.6
+nbconvert==7.17.0
 nbformat==5.10.4
 nest-asyncio==1.6.0
 notebook==7.4.5
