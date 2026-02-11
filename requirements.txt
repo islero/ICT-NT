@@ -47,7 +47,7 @@ pytest-cov>=4.1.0
 
 # Type Checking
 pandas-stubs==2.3.0.250703
-types-python-dateutil==2.9.0.20250708
+types-python-dateutil==2.9.0.20260124
 types-pytz==2025.2.0.20250809
 
 # =============================================================================
