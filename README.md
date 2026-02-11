@@ -1,7 +1,7 @@
 # ICT Trading Strategy Framework
 
-[![Tests](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/test.yml)
-[![Code Quality](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/code-quality.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/code-quality.yml)
+[![Tests](https://github.com/islero/ICT-NT/actions/workflows/test.yml/badge.svg)](https://github.com/islero/ICT-NT/actions/workflows/test.yml)
+[![Code Quality](https://github.com/islero/ICT-NT/actions/workflows/code-quality.yml/badge.svg)](https://github.com/islero/ICT-NT/actions/workflows/code-quality.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 

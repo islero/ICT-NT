@@ -23,7 +23,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/ICT-NT.git
+git clone https://github.com/islero/ICT-NT.git
 cd "ICT NT"
 
 # Create virtual environment

@@ -30,8 +30,8 @@ venue = BacktestVenueConfig(
     name="GLBX",
     oms_type=OmsType.NETTING,
     account_type="MARGIN",
-    base_currency="USDT",
-    starting_balances=["10_000 USDT"],
+    base_currency="USD",
+    starting_balances=["10_000 USD"],
 )
 
 # Configure a catalog for a live system
