@@ -24,7 +24,7 @@ pytest-timeout>=2.2.0
 pytest-xdist>=3.5.0  # Parallel test execution
 
 # Profiling and Performance
-line_profiler==5.0.0
+line_profiler==5.0.1
 memory_profiler>=0.61.0
 
 # Documentation
