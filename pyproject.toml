@@ -34,7 +34,7 @@ classifiers = [
 
 dependencies = [
     "nautilus_trader==1.221.0",
-    "pandas>=2.2.0",
+    "pandas>=3.0.2",
     "numpy>=1.26.0",
     "pyarrow>=14.0.0",
     "databento>=0.40.0",
