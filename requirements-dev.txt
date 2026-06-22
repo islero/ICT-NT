@@ -32,5 +32,5 @@ sphinx>=7.2.0
 sphinx-rtd-theme>=2.0.0
 
 # Build Tools
-build>=1.0.0
+build>=1.5.0
 twine>=4.0.0
