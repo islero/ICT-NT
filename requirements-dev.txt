@@ -28,7 +28,7 @@ line_profiler==5.0.2
 memory_profiler>=0.61.0
 
 # Documentation
-sphinx>=7.2.0
+sphinx>=9.0.4
 sphinx-rtd-theme>=2.0.0
 
 # Build Tools
