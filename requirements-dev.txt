@@ -21,7 +21,7 @@ safety>=3.0.0
 # Testing
 pytest-asyncio>=0.23.0
 pytest-timeout>=2.2.0
-pytest-xdist>=3.5.0  # Parallel test execution
+pytest-xdist>=3.8.0  # Parallel test execution
 
 # Profiling and Performance
 line_profiler==5.0.2
