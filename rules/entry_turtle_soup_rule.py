@@ -51,14 +51,14 @@ class EntryTurtleSoupRule(RuleBase):
         if stop_loss_price is None:
             return False
 
-        if stop_loss_price >= current_bar.close:
-            self.strategy.log.error(f"BUY sl {stop_loss_price} >= current bar close {current_bar.close}")
+        if stop_loss_price >= float(current_bar.close):
+            self.strategy.log.error(f"BUY sl {stop_loss_price} >= current bar close {float(current_bar.close)}")
             # Reset the rule signal
             self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
             return False
 
-        take_profit_price = current_bar.close + (
-            self.config.risk_reward_ratio * abs(current_bar.close - stop_loss_price)
+        take_profit_price = float(current_bar.close) + (
+            self.config.risk_reward_ratio * abs(float(current_bar.close) - stop_loss_price)
         )
 
         self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.BUY)
@@ -84,14 +84,14 @@ class EntryTurtleSoupRule(RuleBase):
         if stop_loss_price is None:
             return False
 
-        if stop_loss_price <= current_bar.close:
-            self.strategy.log.error(f"SELL sl {stop_loss_price} <= current bar close {current_bar.close}")
+        if stop_loss_price <= float(current_bar.close):
+            self.strategy.log.error(f"SELL sl {stop_loss_price} <= current bar close {float(current_bar.close)}")
             # Reset the rule signal
             self.shared_state.set(SharedDictKey.TURTLE_SOUP_RULE_SIGNAL, RuleSignal.NONE)
             return False
 
-        take_profit_price = current_bar.close - (
-            self.config.risk_reward_ratio * abs(stop_loss_price - current_bar.close)
+        take_profit_price = float(current_bar.close) - (
+            self.config.risk_reward_ratio * abs(stop_loss_price - float(current_bar.close))
         )
 
         self.shared_state.set(SharedDictKeyBase.ENTRY_RULE_SIGNAL, RuleSignal.SELL)
